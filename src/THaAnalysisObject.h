@@ -13,6 +13,7 @@
 #include "VarDef.h"
 
 #include <vector>
+#include <string>
 #include <cstdio>
 
 class THaEvData; //needed by derived classes
@@ -20,6 +21,8 @@ class TList;
 class TVector3;
 class THaRunBase;
 class THaOutput;
+
+const char* Here( const char* here, const char* prefix = NULL );
 
 class THaAnalysisObject : public TNamed {
   
@@ -35,7 +38,7 @@ public:
   virtual ~THaAnalysisObject();
   
   virtual Int_t        Begin( THaRunBase* r=0 );
-  virtual void         Clear( Option_t* opt="" ) {}
+  virtual void         Clear( Option_t* ) {}
   virtual Int_t        End( THaRunBase* r=0 );
   virtual const char*  GetDBFileName() const;
           const char*  GetConfig() const         { return fConfig.Data(); }
@@ -68,16 +71,34 @@ public:
   static  Int_t   LoadDBvalue( FILE* file, const TDatime& date, 
 			       const char* tag, Double_t& value );
   static  Int_t   LoadDBvalue( FILE* file, const TDatime& date, 
+			       const char* tag, Int_t& value );
+  static  Int_t   LoadDBvalue( FILE* file, const TDatime& date, 
 			       const char* tag, std::string& text );
   static  Int_t   LoadDBvalue( FILE* file, const TDatime& date, 
 			       const char* tag, TString& text );
+  template <class T>
+  static  Int_t   LoadDBarray( FILE* file, const TDatime& date, 
+ 			       const char* tag, std::vector<T>& values );
+  template <class T>
+  static  Int_t   LoadDBmatrix( FILE* file, const TDatime& date, 
+				const char* tag, 
+				std::vector<std::vector<T> >& values,
+				UInt_t ncols );
   static  Int_t   LoadDB( FILE* file, const TDatime& date, 
-			  const TagDef* tags, const char* prefix="" );
+			  const DBRequest* request, const char* prefix="",
+			  Int_t search = 0 );
+  static  Int_t   LoadDB( FILE* file, const TDatime& date, 
+			  const TagDef* tags, const char* prefix="",
+			  Int_t search = 0 );
   static  Int_t   SeekDBdate( FILE* file, const TDatime& date,
-			      bool end_on_tag = false );
+			      Bool_t end_on_tag = false );
   static  Int_t   SeekDBconfig( FILE* file, const char* tag,
 				const char* label = "config",
-				bool end_on_tag = false );
+				Bool_t end_on_tag = false );
+  static  bool    IsTag( const char* buf );
+
+  // Generic utility functions
+  static std::vector<std::string> vsplit( const std::string& s );
 
   // Geometry utility functions
   static  void    GeoToSph( Double_t  th_geo, Double_t  ph_geo,
@@ -102,14 +123,14 @@ public:
 
 protected:
 
-  enum EProperties { kNeedsRunDB = BIT(0) };
+  enum EProperties { kNeedsRunDB = BIT(0), kConfigOverride = BIT(1) };
 
   // General status variables
   char*           fPrefix;    // Name prefix for global variables
   EStatus         fStatus;    // Initialization status flag
   Int_t           fDebug;     // Debug level
-  bool            fIsInit;    // Flag indicating that ReadDatabase called.
-  bool            fIsSetup;   // Flag indicating that Setup called.
+  Bool_t          fIsInit;    // Flag indicating that ReadDatabase done
+  Bool_t          fIsSetup;   // Flag indicating that DefineVariables done.
   TString         fConfig;    // Configuration to use from database
   UInt_t          fProperties;// Properties of this object (see EProperties)
   Bool_t          fOKOut;     // Flag indicating object-output prepared
@@ -127,7 +148,8 @@ protected:
 					   EType type, EMode mode,
 					   const char* var_prefix="" ) const;
 
-  THaAnalysisObject* FindModule( const char* name, const char* classname );
+  THaAnalysisObject*   FindModule( const char* name, const char* classname,
+				   bool do_error = true );
 
   virtual const char*  Here( const char* ) const;
           void         MakePrefix( const char* basename );
@@ -148,18 +170,12 @@ protected:
   // Only derived classes may construct
   THaAnalysisObject( const char* name, const char* description );
 
-  static TList* fgModules;    // List of all currently existing Analysis Modules
-
 private:
-  // Support functions for reading database files
-  static Int_t IsDBdate( const std::string& line, TDatime& date, 
-			 bool warn=true );
-  static Int_t IsDBtag ( const std::string& line, const char* tag, 
-			 std::string& text );
-
   // Prevent default construction, copying, assignment
   THaAnalysisObject( const THaAnalysisObject& );
   THaAnalysisObject& operator=( const THaAnalysisObject& );
+
+  static TList* fgModules;  // List of all currently existing Analysis Modules
 
   ClassDef(THaAnalysisObject,1)   //ABC for a data analysis object
 };

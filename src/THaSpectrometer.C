@@ -22,6 +22,7 @@
 #include "THaPIDinfo.h"
 #include "THaTrack.h"
 #include "TClass.h"
+#include "TList.h"
 #include "TMath.h"
 #include "TList.h"
 #include "VarDef.h"
@@ -511,7 +512,7 @@ Int_t THaSpectrometer::ReadRunDatabase( const TDatime& date )
   err = LoadDB( file, date, tags, fPrefix );
   if( err ) {    
     if( err>0 )
-      Error( Here("ReadRunDatabase()"), "Required tag %s%s missing in the "
+      Error( Here("ReadRunDatabase()"), "Required key %s%s missing in the "
 	     "run database.\nSpectrometer initialization failed.",
 	     fPrefix, tags[err-1].name );
     fclose(file);

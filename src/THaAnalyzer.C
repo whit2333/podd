@@ -44,10 +44,12 @@
 #include "TROOT.h"
 #include "TMath.h"
 #include "TDirectory.h"
+#include "THaCrateMap.h"
 
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include <cstring>
 
 using namespace std;
 
@@ -58,7 +60,7 @@ const int MAXSTAGE = 100;   // Sanity limit on number of stages
 const int MAXCOUNTER = 200; // Sanity limit on number of counters
 
 // Pointer to single instance of this object
-THaAnalyzer* THaAnalyzer::fgAnalyzer = NULL;
+THaAnalyzer* THaAnalyzer::fgAnalyzer = 0;
 
 //FIXME: 
 // do we need to "close" scalers/EPICS analysis if we reach the event limit?
@@ -331,7 +333,7 @@ void THaAnalyzer::InitStages()
     { -1 }
   };
   const Stage_t* idef = stagedef;
-  while( DefineStage(idef++) );
+  while( DefineStage(idef++) ) {}
 }
 
 //_____________________________________________________________________________
@@ -363,7 +365,7 @@ void THaAnalyzer::InitCounters()
     { -1 }
   };
   const Counter_t* jdef = counterdef;
-  while( DefineCounter(jdef++) );
+  while( DefineCounter(jdef++) ) {}
 }
 
 //_____________________________________________________________________________
@@ -608,7 +610,8 @@ Int_t THaAnalyzer::DoInit( THaRunBase* run )
 
   // Make sure we save a copy of the run in fRun.
   // Note that the run may be derived from THaRunBase, so this is a bit tricky.
-  if( new_run ) {
+  // Check if run changed using Compare to be sure we note change of split runs
+  if( new_run || fRun->Compare(run) ) {
     delete fRun;
     fRun = static_cast<THaRunBase*>(run->IsA()->New());
     if( !fRun )
@@ -767,6 +770,8 @@ Int_t THaAnalyzer::ReadOneEvent()
     // Decode the event
     // FIXME: return code mixup with above
     status = fEvData->LoadEvent( fRun->GetEvBuffer() );
+    if( status == THaEvData::HED_OK )
+      status = S_SUCCESS;
     Incr(kNevRead);
     break;
 
@@ -810,7 +815,22 @@ Int_t THaAnalyzer::SetCountMode( Int_t mode )
 }
 
 //_____________________________________________________________________________
-void THaAnalyzer::Print( Option_t* opt ) const
+void THaAnalyzer::SetCrateMapFileName( const char* name )
+{
+  // Set name of file from which to read the crate map. 
+  // For simplicity, a simple string like "mymap" is automatically
+  // converted to "db_mymap.dat". See THaAnalysisObject::GetDBFileList
+
+  if( !name || !*name )
+    // Use default map
+    name = "";
+
+  THaEvData::SetCrateMapName(name);
+  return;
+}
+
+//_____________________________________________________________________________
+void THaAnalyzer::Print( Option_t* ) const
 {
   // Report status of the analyzer.
 
@@ -1240,6 +1260,9 @@ Int_t THaAnalyzer::Process( THaRunBase* run )
   fEvData->EnableHelicity( HelicityEnabled() );
   // Decode scalers only if requested and fScalers is not empty
   fEvData->EnableScalers( ScalersEnabled() && (fScalers->GetSize()>0) );
+  // Set decoder reporting level. FIXME: update when THaEvData is updated
+  fEvData->SetVerbose( (fVerbose>2) );
+  fEvData->SetDebug( (fVerbose>3) );
 
   // Informational messages
   if( fVerbose>1 ) {
@@ -1262,15 +1285,18 @@ Int_t THaAnalyzer::Process( THaRunBase* run )
   fAnalysisStarted = kTRUE;
   BeginAnalysis();
   if( fFile ) {
+    fFile->cd();
     fRun->Write("Run_Data");  // Save run data to first ROOT file
   }
 
-  while ( !terminate && (status = ReadOneEvent()) != EOF && 
-	  fNev < nlast ) {
+  while ( !terminate && fNev < nlast && (status = ReadOneEvent()) != EOF ) {
 
-    //--- Skip events.with errors
-    if( status )
+    //--- Skip events.with errors, unless fatal
+    if( status ) {
+      if( status == THaEvData::HED_FATAL )
+	break;
       continue;
+    }
 
     UInt_t evnum = fEvData->GetEvNum();
 

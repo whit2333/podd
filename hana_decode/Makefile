@@ -1,7 +1,7 @@
 # Makefile for "hana" (C++ Hall A Analyzer) Event Decoder.
 # R. Michaels, rom@jlab.org, Mar 2001
 #
-# Test Executibles:
+# Test Executables:
 # tstcoda  --  test of abstract interface to THaCodaFile and THaEtClient.
 # tstio    --  simple tests of CODA I/O from a file.
 # tdecpr   --  test of decoder with self-explanatory printouts.
@@ -12,7 +12,7 @@
 # 
 # To understand how to use decoding classes, look at the 'main'
 # routines tstcoda_main.C, tstio_main.C, tdecpr_main.C, tdecex_main.C etc
-# corresponding to the above executibles.  Also see haGenDetTest.C
+# corresponding to the above executables.  Also see haGenDetTest.C
 # which shows proposed usage in a 'generic' detector class.
 
 # Note regarding software from DAQ group
@@ -29,7 +29,7 @@ VERS = hana_decode_1.6
 # export STANDALONE = 1
 
 # MAINDIR is the source of headers for main code.
-# Also need objects from MAINDIR for standalone test executibles,
+# Also need objects from MAINDIR for standalone test executables,
 # but NOT for making library.
 export MAINDIR = ../src
 
@@ -52,13 +52,14 @@ export MAINDIR = ../src
 ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
+ROOTBIN      := $(shell root-config --bindir)
 
 INCLUDES      = $(ROOTCFLAGS) 
 
 ifndef STANDALONE
    INCLUDES += -I$(MAINDIR)
 else
-   ARCH          = linuxegcs
+   ARCH          = linux
   # ARCH          = solarisCC5
 
 # Only define compiler options for STANDALONE, otherwise inherit them from
@@ -77,10 +78,11 @@ else
      else
         CXXFLG      = -O -KPIC
         LDFLAGS     = -O
+        DEFINES    += -DNDEBUG
      endif
   endif
 
-  ifeq ($(ARCH),linuxegcs)
+  ifeq ($(ARCH),linux)
      DEFINES      += -DLINUXVERS
      # Linux with egcs (>= RedHat 5.2)
      CXX           = g++
@@ -92,6 +94,7 @@ else
      else
         CXXFLG      = -O2
         LDFLAGS     = -O2
+        DEFINES    += -DNDEBUG
      endif
      CXXFLG        += -Wall -fPIC
      CXXEXTFLG      = -Woverloaded-virtual
@@ -99,7 +102,8 @@ else
   ifdef WITH_DEBUG
      DEFINES     += -DWITH_DEBUG
   endif
-#  CXXFLG       += $(INCLUDES) $(DEFINES)
+  CXXFLG       += $(INCLUDES) $(DEFINES)
+  DEFINES      += $(shell getconf LFS_CFLAGS)
 endif
 
 ifeq ($(CXX),)
@@ -166,7 +170,7 @@ GLIBS        += $(ROOTGLIBS) $(SYSLIBS)
 # DECODE_OBJS is the package for CODA I/O and decoder written by R. Michaels.
 # This, together with libevio, is what other developers need.
 
-SRC = THaUsrstrutils.C THaCrateMap.C THaCodaData.C THaHelicity.C \
+SRC = THaUsrstrutils.C THaCrateMap.C THaCodaData.C \
       THaEpics.C THaFastBusWord.C THaCodaFile.C THaSlotData.C \
       THaEvData.C evio.C THaCodaDecoder.C
 
@@ -209,6 +213,8 @@ libdc.a: $(DECODE_OBJS)
 ifndef STANDALONE
 	cp -p $@ $(LIBDIR)
 endif
+
+static:	libdc.a
 
 libdc.so: $(DECODE_OBJS)
 	rm -f $@
@@ -287,7 +293,7 @@ swapped_intcpy.o: swapped_intcpy.c
 
 THaDecDict.C: $(RCHEAD) haDecode_LinkDef.h
 	@echo "Generating Decoder Dictionary..."
-	$(ROOTSYS)/bin/rootcint -f THaDecDict.C -c $(CXXFLAGS) $^
+	$(ROOTBIN)/rootcint -f THaDecDict.C -c $(CXXFLAGS) $^
 
 # create a tar file of ./$(VERS)/* (all code)
 

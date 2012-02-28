@@ -39,6 +39,7 @@
 #endif
 
 using namespace std;
+using THaString::Split;
 
 //_____________________________________________________________________________
 THaVDC::THaVDC( const char* name, const char* description,
@@ -105,21 +106,19 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
     tag.Append(".");
   tag.Prepend("[");
   tag.Append("global]"); 
-  TString line, tag2(tag);
-  tag.ToLower();
 
+  TString line;
   bool found = false;
   while (!found && fgets (buff, LEN, file) != NULL) {
     char* buf = ::Compress(buff);  //strip blanks
     line = buf;
     delete [] buf;
     if( line.EndsWith("\n") ) line.Chop();
-    line.ToLower();
-     if ( tag == line ) 
+    if ( tag == line ) 
       found = true;
   }
   if( !found ) {
-    Error(Here(here), "Database entry %s not found!", tag2.Data() );
+    Error(Here(here), "Database section %s not found!", tag.Data() );
     fclose(file);
     return kInitError;
   }
@@ -128,7 +127,8 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
 
   // read in some basic constants first
   //  fscanf(file, "%lf", &fSpacing);
-  // fSpacing is calculated from the actual z-positions in Init()
+  // fSpacing is now calculated from the actual z-positions in Init(),
+  // so skip the first line after [ global ] completely:
   fgets(buff, LEN, file); // Skip rest of line
  
   // Read in the focal plane transfer elements
@@ -146,10 +146,21 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
   // comment line
   // t 0 0 0  ... etc.
   //
-  if( SeekDBdate( file, date ) == 0 && fConfig.Length() > 0 && 
-      SeekDBconfig( file, fConfig.Data() ));
+  if( (found = SeekDBdate( file, date )) == 0 && !fConfig.IsNull() && 
+      (found = SeekDBconfig( file, fConfig.Data() )) == 0 ) {
+    // Print warning if a requested (non-empty) config not found
+    Warning( Here(here), "Requested configuration section \"%s\" not "
+	     "found in database. Using default (first) section.", 
+	     fConfig.Data() );
+  }
 
-  fgets(buff, LEN, file); // Skip comment line
+  // Second line after [ global ] or first line after a found tag.
+  // After a found tag, it must be the comment line. If not found, then it 
+  // can be either the comment or a non-found tag before the comment...
+  fgets(buff, LEN, file);  // Skip line
+  if( !found && IsTag(buff) )
+    // Skip one more line if this one was a non-found tag
+    fgets(buff, LEN, file);
 
   fTMatrixElems.clear();
   fDMatrixElems.clear();
@@ -162,7 +173,7 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
   fFPMatrixElems.clear();
   fFPMatrixElems.resize(3);
 
-  typedef vector<THaString>::size_type vsiz_t;
+  typedef vector<string>::size_type vsiz_t;
   map<string,vsiz_t> power;
   power["t"] = 3;  // transport to focal-plane tensors
   power["y"] = 3;
@@ -200,14 +211,14 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
   // Read in line-by-line, so as to be able to handle tensors of
   // different orders.
   while( fgets(buff, LEN, file) ) {
-    THaString line(buff);
+    string line(buff);
     // Erase trailing newline
     if( line.size() > 0 && line[line.size()-1] == '\n' ) {
       buff[line.size()-1] = 0;
       line.erase(line.size()-1,1);
     }
     // Split the line into whitespace-separated fields    
-    vector<THaString> line_spl = line.Split();
+    vector<string> line_spl = Split(line);
 
     // Stop if the line does not start with a string referring to
     // a known type of matrix element. In particular, this will
@@ -268,7 +279,7 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
 	// but ensure that they are defined only once!
 	bool match = false;
 	for( vector<THaMatrixElement>::iterator it = mat->begin();
-	     it != mat->end() && !(match = it->match(ME)); it++ );
+	     it != mat->end() && !(match = it->match(ME)); it++ ) {}
 	if( match ) {
 	  Warning(Here(here), "Duplicate definition of "
 		  "matrix element: %s. Using first definition.", buff);
@@ -299,7 +310,9 @@ Int_t THaVDC::ReadDatabase( const TDatime& date )
 
   // since we take the VDC to be the origin of the coordinate
   // space, this is actually pretty simple
-  const THaDetector* s1 = GetApparatus()->GetDetector("s1");
+  const THaDetector* s1 = 0;
+  if( GetApparatus() )
+    s1 = GetApparatus()->GetDetector("s1");
   if(s1 == NULL)
     fCentralDist = 0;
   else
@@ -609,11 +622,19 @@ Int_t THaVDC::ConstructTracks( TClonesArray* tracks, Int_t mode )
 }
 
 //_____________________________________________________________________________
+void THaVDC::Clear( Option_t* opt )
+{ 
+  // Clear event-by-event data
+
+  fLower->Clear(opt);
+  fUpper->Clear(opt);
+}
+
+//_____________________________________________________________________________
 Int_t THaVDC::Decode( const THaEvData& evdata )
 {
   // Decode data from VDC planes
   
-  Clear();
   fLower->Decode(evdata); 
   fUpper->Decode(evdata);
 

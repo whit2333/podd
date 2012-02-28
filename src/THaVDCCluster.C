@@ -11,10 +11,10 @@
 #include "THaVDCPlane.h"
 #include "THaVDCUVTrack.h"
 #include "THaTrack.h"
+#include "TMath.h"
 #include "TClass.h"
 
 #include <iostream>
-#include <cmath>
 
 using namespace std;
 
@@ -22,6 +22,7 @@ const Double_t THaVDCCluster::kBig = 1e38;  // Arbitrary large value
 
 //_____________________________________________________________________________
 THaVDCCluster::THaVDCCluster( const THaVDCCluster& rhs ) :
+  TObject(rhs),
   fSize(rhs.fSize), fPlane(rhs.fPlane), fSlope(rhs.fSlope), 
   fSigmaSlope(rhs.fSigmaSlope), fInt(rhs.fInt), fSigmaInt(rhs.fSigmaInt), 
   fT0(rhs.fT0), fSigmaT0(rhs.fSigmaT0), fPivot(rhs.fPivot), 
@@ -81,7 +82,7 @@ void THaVDCCluster::AddHit(THaVDCHit * hit)
 }
 
 //_____________________________________________________________________________
-void THaVDCCluster::Clear( const Option_t* opt )
+void THaVDCCluster::Clear( const Option_t* )
 {
   // Clear the contents of the cluster
 
@@ -201,7 +202,7 @@ void THaVDCCluster::CalcDist()
 }
   
 //_____________________________________________________________________________
-void THaVDCCluster::FitTrack( EMode mode )
+void THaVDCCluster::FitTrack( EMode /* mode */ )
 {
   // Fit track to drift distances. Supports three modes:
   // 
@@ -289,9 +290,9 @@ void THaVDCCluster::FitSimpleTrack()
       sumDY2 += (y - Y) * (y - Y);
     } 
     
-    sigmaY = sqrt (sumDY2 / (N - 2));
-    sigmaM = sigmaY * sqrt ( N / ( N * sumXX - sumX * sumX) );
-    sigmaB = sigmaY * sqrt (sumXX / ( N * sumXX - sumX * sumX) );
+    sigmaY = TMath::Sqrt (sumDY2 / (N - 2));
+    sigmaM = sigmaY * TMath::Sqrt ( N / ( N * sumXX - sumX * sumX) );
+    sigmaB = sigmaY * TMath::Sqrt (sumXX / ( N * sumXX - sumX * sumX) );
     
     // Pick the best value
     if (i == 0 || sigmaY < bestFit) {
@@ -424,8 +425,8 @@ void THaVDCCluster::FitSimpleTrackWgt()
     m  =   1/G;
     b  = - F/G;
 
-    sigmaM = m * m * sqrt( sigmaG2 );
-    sigmaB = sqrt( sigmaF2/(G*G) + F*F/(G*G*G*G)*sigmaG2 - 2*F/(G*G*G)*sigmaFG);
+    sigmaM = m * m * TMath::Sqrt( sigmaG2 );
+    sigmaB = TMath::Sqrt( sigmaF2/(G*G) + F*F/(G*G*G*G)*sigmaG2 - 2*F/(G*G*G)*sigmaFG);
     
     // calculate the best possible chi2 for the track given this slope and intercept
     Double_t chi2 = 0.;
@@ -510,7 +511,7 @@ void THaVDCCluster::CalcChisquare(Double_t& chi2, Int_t& nhits ) const
 
 
 //_____________________________________________________________________________
-void THaVDCCluster::Print( Option_t* opt ) const
+void THaVDCCluster::Print( Option_t* ) const
 {
   // Print contents of cluster
 

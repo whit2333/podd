@@ -29,7 +29,7 @@
 
 #include "VarDef.h"
 //#include "THaString.h"
-#include "THaDB.h"
+//#include "THaDB.h"
 
 using namespace std;
 
@@ -191,7 +191,7 @@ Int_t THaCoincTime::ReadDatabase( const TDatime& date )
     
     Int_t crate, slot, first, last;
 
-    while ( ReadComment( fi, buf, LEN ) );
+    while ( ReadComment( fi, buf, LEN ) ) {}
 
     fgets ( buf, LEN, fi );
     
@@ -250,6 +250,7 @@ Int_t THaCoincTime::ReadDatabase( const TDatime& date )
   return kOK;
 }
 
+#if 0
 //_____________________________________________________________________________
 Int_t THaCoincTime::ReadDB( const TDatime& date )
 {
@@ -280,7 +281,7 @@ Int_t THaCoincTime::ReadDB( const TDatime& date )
     }
 
     // read in calibration constants
-    TagDef list[] = {
+    DBRequest list[] = {
       { "TDC_res", &fTdcRes[i] },
       { "TDC_offset", &fTdcOff[i] },
       { 0 }
@@ -304,7 +305,7 @@ Int_t THaCoincTime::ReadDB( const TDatime& date )
     
   return kOK;
 }
-
+#endif
 
 //_____________________________________________________________________________
 Int_t THaCoincTime::Process( const THaEvData& evdata )

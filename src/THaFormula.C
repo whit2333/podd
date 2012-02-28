@@ -156,7 +156,7 @@ char* THaFormula::DefinedString( Int_t i )
     char** ppc = (char**)pvar->GetValuePointer(); //truly gruesome cast
     return *ppc;
   }
-  return (char*)"";  //sorry, but that's the return type ROOT wants... :(
+  return (char*)"";
 }
 
 //_____________________________________________________________________________

@@ -61,8 +61,8 @@ public:
    Int_t LoadDataCodaFile(const char* filename);      
    Int_t LoadDataCodaFile(TString filename);      
 // Load data from scaler history file for run number
-   Int_t LoadDataHistoryFile(int run_num); // default file "scaler_history.dat"
-   Int_t LoadDataHistoryFile(const char* filename, int run_num);
+   Int_t LoadDataHistoryFile(int run_num, int hdeci=0); // default file "scaler_history.dat"
+   Int_t LoadDataHistoryFile(const char* filename, int run_num, int hdeci=0);
 // Online 'server' may be Name or IP of VME cpu, or
 // 'server' may also be a mnemonic like "Left", "Right", etc
    Int_t LoadDataOnline();    // server and port is known for 'Bankgroup'
@@ -72,7 +72,7 @@ public:
    virtual void PrintSummary();  // Print out a summary of important scalers.
 
    const char* GetName() const { return bankgroup.c_str(); };
-   const Int_t GetCrate() const { return crate; };
+   Int_t GetCrate() const { return crate; };
 
 // Get scaler data from slot #slot and channel #chan (slot >= 0, chan >= 0)
 // Get counts by history, histor = 1 = previous event, 0 = present.
@@ -92,7 +92,9 @@ public:
    Int_t GetTrig(Int_t helicity, Int_t trigger, Int_t histor=0);   
    Int_t GetBcm(Int_t helicity, const char* which, Int_t histor=0);   
    Int_t GetPulser(Int_t helicity, const char* which, Int_t histor=0);  
+   Int_t GetNormData(Int_t tgtstate, Int_t helicity, const char* which, Int_t histor=0);  
    Int_t GetNormData(Int_t helicity, const char* which, Int_t histor=0);  
+   Int_t GetNormData(Int_t tgtstate, Int_t helicity, Int_t chan, Int_t histor);
    Int_t GetNormData(Int_t helicity, Int_t chan, Int_t histor=0);
 // RATES (Hz) since last update, similar usage to above.
    Double_t GetScalerRate(Int_t slot, Int_t chan);
@@ -104,15 +106,21 @@ public:
    Double_t GetBcmRate(Int_t helicity, const char* which);      
    Double_t GetPulserRate(const char* which);   
    Double_t GetPulserRate(Int_t helicity, const char* which);   
+   Double_t GetNormRate(Int_t tgtstate, Int_t helicity, const char* which);
    Double_t GetNormRate(Int_t helicity, const char* which);
    Double_t GetNormRate(Int_t helicity, Int_t chan);
+   Double_t GetNormRate(Int_t tgtstate, Int_t helicity, Int_t chan);
+   Double_t GetClockRate() const { return clockrate; }
+   Double_t GetIRate(Int_t slot, Int_t chan);
    Bool_t IsRenewed() const { return new_load; }  // kTRUE if obj has new data
    void SetIpAddress(std::string ipaddress);  // set IP for online data
    void SetPort(Int_t port);                    // set PORT# for online data
    void SetClockLoc(Int_t slot, Int_t chan);  // set clock location
    void SetClockRate(Double_t clkrate);       // set clock rate
    void SetTimeInterval(Double_t time);    // set avg time interval between events. (if no clk)
+   void SetIChan(Int_t slot, Int_t chan);  // Set channel to norm. by (for GetIRate)
    Int_t GetSlot(std::string which, Int_t helicity=0);
+   Int_t GetSlot(Int_t tgtstate, Int_t helicity);
    Int_t GetChan(std::string which, Int_t helicity=0, Int_t chan=0);
    THaScalerDB* GetDataBase() { return database; };
    
@@ -122,12 +130,14 @@ protected:
    THaCodaFile *fcodafile;
    std::vector<Int_t> onlmap;
    THaScalerDB *database; 
-   std::multimap<std::string, int> normmap;
+   std::multimap<std::string, Int_t> normmap;
    Int_t *rawdata;
    Bool_t coda_open;
-   Int_t header, crate, evstr_type;
+   UInt_t header;
+   Int_t crate, evstr_type;
    std::string vme_server;
    int vme_port, clkslot, clkchan;
+   int icurslot, icurchan;
    Bool_t found_crate,first_loop;
    Bool_t did_init, new_load, one_load, use_clock;
    Int_t *normslot;
@@ -142,7 +152,9 @@ protected:
    UInt_t header_str_to_base16(const std::string& header);
    Double_t calib_u1,calib_u3,calib_u10,calib_d1,calib_d3,calib_d10;
    Double_t off_u1,off_u3,off_u10,off_d1,off_d3,off_d10;
+   Double_t GetTimeDiff(Int_t tgtstate, Int_t helicity);
    Double_t GetTimeDiff(Int_t helicity);
+   Double_t GetTimeDiffSlot(Int_t slot, Int_t chan=7);
    void SetupNormMap();
    static const Int_t fDebug = 0;
 

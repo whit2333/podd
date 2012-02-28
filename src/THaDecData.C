@@ -62,19 +62,145 @@
 #include "TDatime.h"
 #include "TH1.h"
 #include "TClass.h"
+#include "TNamed.h"
+#include "TDirectory.h"
+
 #include "VarDef.h"
 #include <fstream>
 #include <iostream>
 #include <cstring>
 #include <cctype>
+#include <vector>
+#include <string>
 #include <cstdlib>
+#include <cassert>
 
 using namespace std;
+
+//FIXME: temporary, for histogram definitions in BookHist
+struct HistDef {
+  const char* name;
+  const char* title;
+  Int_t       nbins;
+  Double_t    xmin;
+  Double_t    xmax;
+};
+
+static const HistDef histdefs[] = {
+  //FIXME: put the nhit spectra into the THaOutput Odef file
+  // they are simply histos of ${arm}.vdc.${plane}.nhit
+  { "Lu1nhit",  "Num Hits Left U1", 50, -1, 49 },
+  { "Lu2nhit",  "Num Hits Left U2", 50, -1, 49 },
+  { "Lv1nhit",  "Num Hits Left V1", 50, -1, 49 },
+  { "Lv2nhit",  "Num Hits Left V2", 50, -1, 49 },
+  { "Ru1nhit",  "Num Hits Right U1", 50, -1, 49 },
+  { "Ru2nhit",  "Num Hits Right U2", 50, -1, 49 },
+  { "Rv1nhit",  "Num Hits Right V1", 50, -1, 49 },
+  { "Rv2nhit",  "Num Hits Right V2", 50, -1, 49 },
+  // These are probably best left here
+  //FIXME: adjust nbins, xmax based on actual VDC configuration
+  { "Lu1eff",   "Left arm U1 efficiency", 400, 0,400 },
+  { "Lu2eff",   "Left arm U2 efficiency", 400, 0,400 },
+  { "Lv1eff",   "Left arm V1 efficiency", 400, 0,400 },
+  { "Lv2eff",   "Left arm V2 efficiency", 400, 0,400 },
+  { "Ru1eff",   "Right arm U1 efficiency", 400, 0,400 },
+  { "Ru2eff",   "Right arm U2 efficiency", 400, 0,400 },
+  { "Rv1eff",   "Right arm V1 efficiency", 400, 0,400 },
+  { "Rv2eff",   "Right arm V2 efficiency", 400, 0,400 },
+  //FIXME: why not put into THaOutput Odef file?
+  { "Lenroc12", "Event length in ROC12", 500, 0,5000 },
+  { "Lenroc16", "Event length in ROC16", 500, 0,5000 },
+  { 0 }
+};
+
+//FIXME: make this a nice OO hierarchy for different derived classes for
+// the different data type (crate, header, etc.)
+//FIXME: let this class handle its associated global analyzer variable
+//FIXME: add "roclen" data type
+class BdataLoc : public TNamed {
+// Utility class used by THaDecData.
+// Data location, either in (crates, slots, channel), or
+// relative to a unique header in a crate or in an event.
+   static const Int_t MxHits=16;
+ public:
+   // c'tor for (crate,slot,channel) selection
+   BdataLoc ( const char* nm, Int_t cra, Int_t slo, Int_t cha ) :
+     TNamed(nm,nm), crate(cra), slot(slo), chan(cha), header(0), ntoskip(0), 
+     search_choice(0) { Clear(); }
+   // c'tor for header search (note, the only diff to above is 3rd arg is UInt_t)
+  //FIXME: this kind of overloading (Int/UInt) is asking for trouble...
+   BdataLoc ( const char* nm, Int_t cra, UInt_t head, Int_t skip ) :
+     TNamed(nm,nm), crate(cra), slot(0), chan(0), header(head), ntoskip(skip),
+     search_choice(1) { Clear(); }
+   Bool_t IsSlot() { return (search_choice == 0); }
+   void Clear( const Option_t* ="" ) { ndata=0;  loaded_once = kFALSE; }
+   void Load(UInt_t data) {
+     if (ndata<MxHits) rdata[ndata++]=data;
+     loaded_once = kTRUE;
+   }
+   Bool_t DidLoad() { return loaded_once; }
+   Int_t NumHits() { return ndata; }
+  //FIXME: not really needed if the global analyzer variable is right in here
+   UInt_t Get(Int_t i=0) { 
+     return (i >= 0 && ndata > i) ? rdata[i] : 0; }
+  Bool_t operator==( const char* aname ) { return fName==aname; }
+  // operator== and != compare the hardware definitions of two BdataLoc's
+  Bool_t operator==( const BdataLoc& rhs ) const {
+    return ( search_choice == rhs.search_choice && crate == rhs.crate &&
+	     ( (search_choice == 0 && slot == rhs.slot && chan == rhs.chan) ||
+	       (search_choice == 1 && header == rhs.header && 
+		ntoskip == rhs.ntoskip)
+	       )  
+	     );
+  }
+  Bool_t operator!=( const BdataLoc& rhs ) const { return !(*this == rhs ); }
+  //FIXME: Set functions not needed if we put the database line parser in here
+  void SetSlot( Int_t cr, Int_t sl, Int_t ch ) {
+    crate = cr; slot = sl; chan = ch; header = ntoskip = search_choice = 0;
+  }
+  void SetHeader( Int_t cr, UInt_t hd, Int_t sk ) {
+    crate = cr; header = hd; ntoskip = sk; slot = chan = 0; search_choice = 1;
+  }
+   ~BdataLoc() {}
+   
+   Int_t  crate, slot, chan;   // where to look in crates
+   UInt_t header;              // header (unique either in data or in crate)
+   Int_t ntoskip;              // how far to skip beyond header
+   
+  //FIXME: each subclass of BdataLoc should support its own data type here.
+  // Not all hardware is/needs multihit capability. Should support single-value
+  // data as well.
+   UInt_t rdata[MxHits];       //[ndata] raw data (to accom. multihit chanl)
+   Int_t  ndata;               // number of relevant entries
+ private:
+   Int_t  search_choice;       // whether to search in crates or rel. to header
+   Bool_t loaded_once;
+   BdataLoc();
+   BdataLoc(const BdataLoc& dataloc);
+   BdataLoc& operator=(const BdataLoc& dataloc);
+};
 
 typedef vector<BdataLoc*>::iterator Iter_t;
 
 THaDecData* THaDecData::fgThis = NULL;  //Pointer to single instance of this class
 Int_t  THaDecData::fgVdcEffFirst = 2;
+
+//_____________________________________________________________________________
+static UInt_t header_str_to_base16(const char* hdr) {
+  // Utility to convert string header to base 16 (FIXME: base 16??) integer
+  const char chex[] = "0123456789abcdef";
+  if( !hdr ) return 0;
+  const char* p = hdr+strlen(hdr);
+  UInt_t result = 0;  UInt_t power = 1;
+  while( p-- != hdr ) {
+    const char* q = strchr(chex,tolower(*p));
+    if( q ) {
+      result += (q-chex)*power; 
+      power *= 16;
+    }
+  }
+  return result;
+};
 
 
 //_____________________________________________________________________________
@@ -105,7 +231,7 @@ THaDecData::~THaDecData()
 }
 
 //_____________________________________________________________________________
-void THaDecData::Clear( Option_t* opt ) 
+void THaDecData::Clear( Option_t* )
 {
   // Clear the object (set event-by-event data to zero)
 
@@ -131,17 +257,17 @@ void THaDecData::Clear( Option_t* opt )
   edtpr      = 0;
   lenroc12   = 0;
   lenroc16   = 0;
-  for( Iter_t p = fWordLoc.begin();  p != fWordLoc.end(); p++)  (*p)->Clear();
-  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); p++) (*p)->Clear();
+  for( Iter_t p = fWordLoc.begin();  p != fWordLoc.end(); ++p)  (*p)->Clear();
+  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); ++p) (*p)->Clear();
 }
 
 //_____________________________________________________________________________
-void THaDecData::Reset( Option_t* opt ) 
+void THaDecData::Reset( Option_t* ) 
 {
   // Reset the object (zero all data, including histograms)
 
   Clear();
-  for( vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); it++ )
+  for( vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); ++it )
     (*it)->Reset();
   fgVdcEffFirst = 2;
 }
@@ -154,6 +280,7 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 
   Int_t retval = 0;
 
+  // FIXME: make this completely dynamic
   RVarDef vars[] = {
     { "evtypebits", "event type bit pattern",      "evtypebits" },  
     { "evtype",     "event type from bit pattern", "evtype" },  
@@ -188,19 +315,29 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 
   if( mode != kDefine ) {
     // Undefine the dynamically-defined global variables
-     for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); p++ ) {
+     for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); ++p ) {
       DefineChannel(*p,mode);
       if( mode == kDelete )
 	delete *p;
     }
-    for( Iter_t p = fWordLoc.begin();  p != fWordLoc.end(); p++ ) {
+    for( Iter_t p = fWordLoc.begin();  p != fWordLoc.end(); ++p ) {
       DefineChannel(*p,mode);
       if( mode == kDelete )
 	delete *p;
     }
     if( mode == kDelete ) {
-      for( vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); it++ )
-	delete *it;
+      const HistDef* h = histdefs;
+      for( vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); ++it ) {
+	// Verify that each histogram is still in memory. It usually isn't because
+	// ROOT deletes it when the output file is closed.
+	assert( h && h->name );
+	TObject* obj = gDirectory->FindObject(h->name);
+	if( obj && obj->IsA() && obj->IsA()->InheritsFrom("TH1F") ) {
+	  assert( !strcmp(h->name,obj->GetName()) );
+	  delete *it;
+	}
+	++h;
+      }
       fCrateLoc.clear();   
       fWordLoc.clear(); 
       hist.clear();
@@ -228,7 +365,7 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
     vector<string> fnames = GetDBFileList( name, date, Here(here));
     // always look for 'decdata.map' in the current directory first.
     fnames.insert(fnames.begin(),string("decdata.map"));
-    if( !fnames.empty() ) {
+    if( !fnames.empty() ) { //keep this test so we may comment out prev line
       vector<string>::iterator it = fnames.begin();
       do {
 	if( fDebug>0 ) {
@@ -274,13 +411,17 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 	if( strvect[0] == pdef->name ) { 
 	  found = true; break;
 	}
-	pdef++;
+	++pdef;
       }
       Int_t slot(0), chan(0), skip(0);
       UInt_t header(0);
       Int_t crate = (Int_t)atoi(strvect[2].c_str());  // crate #
       bool is_slot = (strvect[1] == "crate");
+      //FIXME: instantiate based on keyword -> class mapping
+      // If BdataLoc is a ROOT class hierarchy, we can even dynamically
+      // extend the list of supported data types with plugins
       BdataLoc* b;
+      //FIXME: analyze strvect inside BdataLoc
       if( is_slot ) {  // Crate data ?
 	slot = (Int_t)atoi(strvect[3].c_str());
 	chan = (Int_t)atoi(strvect[4].c_str());
@@ -302,16 +443,17 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 	// - if a name disappears, things are ambiguous. Just leave it as 
 	//   it is, although something is probably wrong with the database
 	//
+	TString bname = b->GetName();
 	Iter_t p;
-	for( p = fWordLoc.begin();  p != fWordLoc.end(); p++ ) {
-	  if( b->name == (*p)->name ) {
+	for( p = fWordLoc.begin();  p != fWordLoc.end(); ++p ) {
+	  if( bname == (*p)->GetName() ) {
 	    already_defined = true;
 	    break;
 	  }
 	}
 	if( !already_defined ) {
-	  for( p = fCrateLoc.begin(); p != fCrateLoc.end(); p++ ) {
-	    if( b->name == (*p)->name ) {
+	  for( p = fCrateLoc.begin(); p != fCrateLoc.end(); ++p ) {
+	    if( bname == (*p)->GetName() ) {
 	      already_defined = true;
 	      break;
 	    }
@@ -322,7 +464,9 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 	  if ( **p != *b ) {
 	    if( fDebug>2 ) 
 	      Info( Here(here), 
-		    "Updating variable %s", (*p)->name.c_str() );
+		    "Updating variable %s", (*p)->GetName() );
+	    //FIXME:  Ouch! If we change from slot to header or vice versa, we
+	    // must move the object from fCrateLoc to fWordLoc or vice versa...
 	    if( is_slot )
 	      (*p)->SetSlot( crate, slot, chan );
 	    else
@@ -331,7 +475,7 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 	    if( fDebug>2 )
 	      Info( Here(here),
 		    "Variable %s already defined and not changed",
-		    (*p)->name.c_str() );
+		    (*p)->GetName() );
 	  }
 	}
       }
@@ -339,11 +483,11 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
       if( !already_defined ) {
 	if( found && fDebug>2 ) 
 	  Info( Here(here), "Defining standard variable %s", 
-		b->name.c_str());
+		b->GetName() );
 	else if( !found && fDebug>2 ) 
 	  // !found is ok, but might be a typo error too, so I print to warn you.
 	  Info( Here(here), 
-		"New variable %s will become global", b->name.c_str());
+		"New variable %s will become global", b->GetName() );
 
 	if( is_slot ) {
 	  fCrateLoc.push_back(b);
@@ -364,11 +508,17 @@ Int_t THaDecData::SetupDecData( const TDatime* run_time, EMode mode )
 }
 
 //_____________________________________________________________________________
+//FIXME: put into BdataLoc
 BdataLoc* THaDecData::DefineChannel(BdataLoc *b, EMode mode, const char* desc)
 {
   if( gHaVars ) {
-    string nm(fPrefix + b->name);
+    string nm(fPrefix); nm += b->GetName();
     if (mode==kDefine)
+      //FIXME: one should be able to define scalar-type global variables
+      // using a fixed-size variable-number-of-entry array (rdata) is a 
+      // terrible kludge to squeeze in support for multihit modules.
+      // This problem will go away automatically if BdataLoc turns into 
+      // a class hierachy and this function is part of each subclass
       gHaVars->Define(nm.c_str(),desc,b->rdata[0],&(b->ndata));
     else if (mode==kDelete) {
       gHaVars->RemoveName(nm.c_str());
@@ -379,7 +529,7 @@ BdataLoc* THaDecData::DefineChannel(BdataLoc *b, EMode mode, const char* desc)
 }
   
 //_____________________________________________________________________________
-Int_t THaDecData::End( THaRunBase* run ) 
+Int_t THaDecData::End( THaRunBase* )
 {
   WriteHist();
   return 0;
@@ -389,7 +539,7 @@ Int_t THaDecData::End( THaRunBase* run )
 void THaDecData::WriteHist()
 {
   //  cout << "Writing Bob Dec Data histos"<<endl<<flush;
-  for (vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); it++)
+  for (vector<TH1F*>::iterator it = hist.begin(); it != hist.end(); ++it)
     (*it)->Write();
 }
 
@@ -398,27 +548,11 @@ void THaDecData::WriteHist()
 {
   // VDC efficiencies
 
-  hist.push_back(new TH1F("Lu1nhit","Num Hits Left U1",50,-1,49));
-  hist.push_back(new TH1F("Lu2nhit","Num Hits Left U2",50,-1,49));
-  hist.push_back(new TH1F("Lv1nhit","Num Hits Left V1",50,-1,49));
-  hist.push_back(new TH1F("Lv2nhit","Num Hits Left V2",50,-1,49));
-  hist.push_back(new TH1F("Ru1nhit","Num Hits Right U1",50,-1,49));
-  hist.push_back(new TH1F("Ru2nhit","Num Hits Right U2",50,-1,49));
-  hist.push_back(new TH1F("Rv1nhit","Num Hits Right V1",50,-1,49));
-  hist.push_back(new TH1F("Rv2nhit","Num Hits Right V2",50,-1,49));
-
-  hist.push_back(new TH1F("Lu1eff","Left arm U1 efficiency",400,0,400));
-  hist.push_back(new TH1F("Lu2eff","Left arm U2 efficiency",400,0,400));
-  hist.push_back(new TH1F("Lv1eff","Left arm V1 efficiency",400,0,400));
-  hist.push_back(new TH1F("Lv2eff","Left arm V2 efficiency",400,0,400));
-  hist.push_back(new TH1F("Ru1eff","Right arm U1 efficiency",400,0,400));
-  hist.push_back(new TH1F("Ru2eff","Right arm U2 efficiency",400,0,400));
-  hist.push_back(new TH1F("Rv1eff","Right arm V1 efficiency",400,0,400));
-  hist.push_back(new TH1F("Rv2eff","Right arm V2 efficiency",400,0,400));
-
-  hist.push_back(new TH1F("Lenroc12","Event length in ROC12",500,0,5000));
-  hist.push_back(new TH1F("Lenroc16","Event length in ROC16",500,0,5000));
-
+  const HistDef* h = histdefs;
+  while( h->name ) {
+    hist.push_back( new TH1F(h->name, h->title, h->nbins, h->xmin, h->xmax) );
+    ++h;
+  }
 }
 
 
@@ -441,7 +575,7 @@ THaAnalysisObject::EStatus THaDecData::Init( const TDatime& run_time )
 }
 
 //_____________________________________________________________________________
-
+//FIXME: junk this
 
 Int_t THaDecData::DefaultMap() {
 // Default setup of mapping of data in this class to locations in the raw data.
@@ -450,6 +584,7 @@ Int_t THaDecData::DefaultMap() {
 // example of decdata.map
 
 // ADCs that show data synch.
+//FIXME: note the beauty of the constructor overloading
    Int_t crate = 1, slot = 25, chan = 16;   
    fCrateLoc.push_back(new BdataLoc("synchadc1", crate, slot, chan));
    fCrateLoc.push_back(new BdataLoc("synchadc2", 2, (Int_t) 24, 48));
@@ -485,7 +620,7 @@ Int_t THaDecData::DefaultMap() {
 
 // Bit pattern for trigger definition
 
-   for (UInt_t i = 0; i < bits.GetNbits(); i++) {
+   for (UInt_t i = 0; i < bits.GetNbits(); ++i) {
      fCrateLoc.push_back(new BdataLoc(Form("bit%d",i+1), 3, (Int_t) 5, 64+i));
    }
 
@@ -505,6 +640,8 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
 
   Clear();
 
+  // FIXME: the pain, THE PAIN
+  // fix this by introducing another configration type "roclen"
   lenroc12 = evdata.GetRocLength(12);
   lenroc16 = evdata.GetRocLength(16);
 
@@ -514,11 +651,11 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
 // For each raw data registerd in fCrateLoc, get the data if it belongs to a 
 // combination (crate, slot, chan).
 
-  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); p++) {
+  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); ++p) {
     BdataLoc *dataloc = *p;
     if ( dataloc->IsSlot() ) {  
       for (Int_t i = 0; i < evdata.GetNumHits(dataloc->crate, 
-		         dataloc->slot, dataloc->chan); i++) {
+		         dataloc->slot, dataloc->chan); ++i) {
 	dataloc->Load(evdata.GetData(dataloc->crate, dataloc->slot, 
 				     dataloc->chan, i));
       }
@@ -529,24 +666,22 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
 // as relative to a header.   fWordLoc are treated seperately from fCrateLoc
 // for performance reasons; this loop could be slow !
 
-  for (Int_t i = 0; i < evdata.GetEvLength(); i++) {
-    //FIXME: hash list lookup of header -> BdataLoc
-    //FIXME: skip to next header?
-    for (Iter_t p = fWordLoc.begin(); p != fWordLoc.end(); p++) {
-      BdataLoc *dataloc = *p;
-      if ( dataloc->DidLoad() || dataloc->IsSlot() ) continue;
-      if ( evdata.InCrate(dataloc->crate, i) ) {
-        if ((UInt_t)evdata.GetRawData(i) == dataloc->header) {
-            dataloc->Load(evdata.GetRawData(i + dataloc->ntoskip));
-        }
-      }
+  //FIXME: This can be made faster if each header is followed by the offset
+  // to the next header. Is it?
+  for (Iter_t p = fWordLoc.begin(); p != fWordLoc.end(); ++p) {
+    BdataLoc *dataloc = *p;
+    for( Int_t i = 0; 
+	 i+dataloc->ntoskip <= evdata.GetRocLength(dataloc->crate); ++i ) {
+      if( static_cast<UInt_t>( evdata.GetRawData(dataloc->crate,i) )
+	  == dataloc->header)
+	dataloc->Load(evdata.GetRawData(dataloc->crate, i + dataloc->ntoskip));
     }
   }
 
   evtype = evdata.GetEvType();   // CODA event type 
 
-  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); p++) {
-    BdataLoc *dataloc = *p;
+  for( Iter_t p = fCrateLoc.begin(); p != fCrateLoc.end(); ++p) {
+    BdataLoc& dataloc = **p;
     bool found = false;
 
 // bit pattern of triggers
@@ -554,9 +689,9 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
   // FIXME: dozens of string comparisons for every event?!?
   // should store pointer to member data with the corresponding BdataLoc object
   // otherwise use a hash list
-    for (UInt_t i = 0; i < bits.GetNbits(); i++) {
-      if ( dataloc->ThisIs(Form("bit%d",i+1)) ) {
-	TrigBits(i+1,dataloc);
+    for (UInt_t i = 1; i <= bits.GetNbits(); ++i) {
+      if ( dataloc == Form("bit%d",i) ) {
+	TrigBits(i,&dataloc);
 	found = true;
 	break;
       }
@@ -564,42 +699,44 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
     if( found ) continue;
 
 // synch ADCs
-    if ( dataloc->ThisIs("synchadc1") ) synchadc1  = dataloc->Get();
-    else if ( dataloc->ThisIs("synchadc2") ) synchadc2  = dataloc->Get();
-    else if ( dataloc->ThisIs("synchadc3") ) synchadc3  = dataloc->Get();
-    else if ( dataloc->ThisIs("synchadc4") ) synchadc4  = dataloc->Get();
-    else if ( dataloc->ThisIs("synchadc14")) synchadc14 = dataloc->Get();
+    if ( dataloc == "synchadc1" ) synchadc1  = dataloc.Get();
+    else if ( dataloc == "synchadc2" ) synchadc2  = dataloc.Get();
+    else if ( dataloc == "synchadc3" ) synchadc3  = dataloc.Get();
+    else if ( dataloc == "synchadc4" ) synchadc4  = dataloc.Get();
+    else if ( dataloc == "synchadc14" ) synchadc14 = dataloc.Get();
 
 // coincidence times
-    else if ( dataloc->ThisIs("ctimel")) ctimel = dataloc->Get();
-    else if ( dataloc->ThisIs("ctimer")) ctimer = dataloc->Get();
+    else if ( dataloc == "ctimel" ) ctimel = dataloc.Get();
+    else if ( dataloc == "ctimer" ) ctimer = dataloc.Get();
 
 // RF time
-    else if ( dataloc->ThisIs("rftime1") ) rftime1  = dataloc->Get();
-    else if ( dataloc->ThisIs("rftime2") ) rftime2  = dataloc->Get();
+    else if ( dataloc == "rftime1" ) rftime1  = dataloc.Get();
+    else if ( dataloc == "rftime2" ) rftime2  = dataloc.Get();
 
 // EDTM pulser
-    else if ( dataloc->ThisIs("edtpl") ) edtpl  = dataloc->Get();
-    else if ( dataloc->ThisIs("edtpr") ) edtpr  = dataloc->Get();
+    else if ( dataloc == "edtpl" ) edtpl  = dataloc.Get();
+    else if ( dataloc == "edtpr" ) edtpr  = dataloc.Get();
 
   }
 
-  for (Iter_t p = fWordLoc.begin(); p != fWordLoc.end(); p++) {
-    BdataLoc *dataloc = *p;
+  for (Iter_t p = fWordLoc.begin(); p != fWordLoc.end(); ++p) {
+    BdataLoc& dataloc = **p;
 
 // time stamps
-    if ( dataloc->ThisIs("timestamp")) timestamp = dataloc->Get();
-    else if ( dataloc->ThisIs("timeroc1") ) timeroc1  = dataloc->Get();
-    else if ( dataloc->ThisIs("timeroc2") ) timeroc2  = dataloc->Get();
-    else if ( dataloc->ThisIs("timeroc3") ) timeroc3  = dataloc->Get();
-    else if ( dataloc->ThisIs("timeroc4") ) timeroc4  = dataloc->Get();
-    else if ( dataloc->ThisIs("timeroc14")) timeroc14 = dataloc->Get();
+    if ( dataloc == "timestamp" ) timestamp = dataloc.Get();
+    else if ( dataloc == "timeroc1" ) timeroc1  = dataloc.Get();
+    else if ( dataloc == "timeroc2" ) timeroc2  = dataloc.Get();
+    else if ( dataloc == "timeroc3" ) timeroc3  = dataloc.Get();
+    else if ( dataloc == "timeroc4" ) timeroc4  = dataloc.Get();
+    else if ( dataloc == "timeroc14" ) timeroc14 = dataloc.Get();
 
   }
 
 // debug 
 //    Print();
 
+  // FIXME: so what guarantees that the VDC wire variables are filled here?
+  // The order in which the apparatuses are added to gHaApps, right? THE PAIN
   VdcEff();
 
   return 0;
@@ -607,19 +744,21 @@ Int_t THaDecData::Decode(const THaEvData& evdata)
 
 
 //_____________________________________________________________________________
+// FIXME: make VdcEff separate module, and make it a physics module
 void THaDecData::VdcEff( )
 { 
   // Update VDC efficiency histograms with current event data
 
-  static const string VdcVars[] = {"L.vdc.u1.wire", "L.vdc.v1.wire", 
-				   "L.vdc.u2.wire", "L.vdc.v2.wire", 
-				   "R.vdc.u1.wire", "R.vdc.v1.wire", 
-				   "R.vdc.u2.wire", "R.vdc.v2.wire"};
+  //FIXME: make configurable
+  static const string VdcVars[] = {"L.vdc.u1.wire", "L.vdc.u2.wire", 
+				   "L.vdc.v1.wire", "L.vdc.v2.wire", 
+				   "R.vdc.u1.wire", "R.vdc.u2.wire", 
+				   "R.vdc.v1.wire", "R.vdc.v2.wire"};
   
   const Int_t nwire = 400;
   //FIXME: really push 3.2kB on the stack every event?
   Int_t wire[nwire];
-  Int_t hitwire[nwire];   // lookup to avoid O(N^3) algorithm
+  Int_t hitwire[nwire];   // lookup to avoid O(N^3) algorithm // really??
 
   
   //FIXME: these static variables prevent multiple instances of this object!
@@ -633,7 +772,7 @@ void THaDecData::VdcEff( )
       memset(eff,0,8*nwire*sizeof(eff[0]));
       memset(xcnt,0,8*nwire*sizeof(xcnt[0]));
     }
-    for( Int_t i = 0; i<8; i++ ) {
+    for( Int_t i = 0; i<8; ++i ) {
       varp[i] = gHaVars->Find(VdcVars[i].c_str());
     }
     fgVdcEffFirst = 0;
@@ -644,7 +783,7 @@ void THaDecData::VdcEff( )
     cout << "\n *************** \n Vdc Effic "<<endl;
 #endif
 
-  for (Int_t ipl = 0; ipl < 8; ipl++) {
+  for (Int_t ipl = 0; ipl < 8; ++ipl) {
 
     Int_t nhit = 0;
     THaVar* pvar = varp[ipl];
@@ -666,7 +805,7 @@ void THaDecData::VdcEff( )
        cout << "nwire "<<n<<"  "<<nwire<<"  "<<nhit<<endl;
 #endif
 
-     for (Int_t i = 0; i < n; i++) {
+     for (Int_t i = 0; i < n; ++i) {
        wire[i] = (Int_t) pvar->GetValue(i);
        if (wire[i]>=0 && wire[i]<nwire)
 	 hitwire[wire[i]]=1;
@@ -677,7 +816,8 @@ void THaDecData::VdcEff( )
      }
 
 // The following does not assume that wire[] is ordered.
-     for (Int_t i = 0; i < n; i++) {
+//FIXME: but we can order it
+     for (Int_t i = 0; i < n; ++i) {
        // look for neighboring hit at +2 wires
        Int_t ngh2=wire[i]+2;
        if (wire[i]<0 || ngh2>=nwire) continue;
@@ -688,12 +828,13 @@ void THaDecData::VdcEff( )
 	 if (fDebug>4) 
 	   cout << "wire eff "<<i<<"  "<<awire<<endl;
 #endif
-	 if (awire>=0 && awire<nwire) {
+	 if (awire>=0 && awire<nwire) { //FIXME:  always true
 	   xcnt[ipl*nwire+awire] = xcnt[ipl*nwire+awire] + 1;
 	   
 	   if ( hitwire[awire] ) {
 	     eff[ipl*nwire+awire] = eff[ipl*nwire+awire] + 1;
 	   } else {
+	     //FIXME: is this a joke?
 	     eff[ipl*nwire+awire] = eff[ipl*nwire+awire] + 0;
 	   }
 	 }
@@ -702,8 +843,9 @@ void THaDecData::VdcEff( )
      
      if ((cnt%500) == 0) {
 
+       // FIXME: why reset?
        hist[ipl+8]->Reset();
-       for (Int_t i = 0; i < nwire; i++) {
+       for (Int_t i = 0; i < nwire; ++i) {
 
          Double_t xeff = -1;
          if (xcnt[ipl*nwire+i] != 0) {
@@ -718,7 +860,9 @@ void THaDecData::VdcEff( )
      }
 
   }
-  cnt++;
+  ++cnt;
+  // FIXME: repeated WriteHist seems to cause problems with splits files
+  // (multiple cycles left in output)
   if ((cnt < 2000 && cnt % 500 == 0) ||
       (cnt % 5000 == 0)) WriteHist();
 
@@ -726,13 +870,12 @@ void THaDecData::VdcEff( )
 
 }
 
-
 //_____________________________________________________________________________
-void THaDecData::Print( Option_t* opt ) const {
+void THaDecData::Print( Option_t* ) const {
 // Dump the data for purpose of debugging.
   cout << "Dump of THaDecData "<<endl;
   cout << "event pattern bits : ";
-  for (UInt_t i = 0; i < bits.GetNbits(); i++) 
+  for (UInt_t i = 0; i < bits.GetNbits(); ++i) 
     cout << " "<<i<<" = "<< bits.TestBitNumber(i)<<"  | ";
   cout << endl;
   cout << "event types,  CODA = "<<evtype<<"   bit pattern = "<<evtypebits<<endl;
@@ -750,41 +893,6 @@ void THaDecData::Print( Option_t* opt ) const {
 
 
 //_____________________________________________________________________________
-vector<string> THaDecData::vsplit(const string& s) {
-// split a string into whitespace-separated strings
-  vector<string> ret;
-  typedef string::size_type ssiz_t;
-  ssiz_t i = 0;
-  while ( i != s.size()) {
-    while (i != s.size() && isspace(s[i])) ++i;
-      ssiz_t j = i;
-      while (j != s.size() && !isspace(s[j])) ++j;
-      if (i != j) {
-         ret.push_back(s.substr(i, j-i));
-         i = j;
-      }
-  }
-  return ret;
-}
-
-//_____________________________________________________________________________
-UInt_t THaDecData::header_str_to_base16(const char* hdr) {
-// Utility to convert string header to base 16 integer
-  const char chex[] = "0123456789abcdef";
-  if( !hdr ) return 0;
-  const char* p = hdr+strlen(hdr);
-  UInt_t result = 0;  UInt_t power = 1;
-  while( p-- != hdr ) {
-    const char* q = strchr(chex,tolower(*p));
-    if( q ) {
-      result += (q-chex)*power; 
-      power *= 16;
-    }
-  }
-  return result;
-};
-
-//_____________________________________________________________________________
 void THaDecData::TrigBits(UInt_t ibit, BdataLoc *dataloc) {
 // Figure out which triggers got a hit.  These are multihit TDCs, so we
 // need to sort out which hit we want to take by applying cuts.
@@ -792,10 +900,11 @@ void THaDecData::TrigBits(UInt_t ibit, BdataLoc *dataloc) {
   if( ibit >= kBitsPerByte*sizeof(UInt_t) ) return; //Limit of evtypebits
   bits.ResetBitNumber(ibit);
 
-  const UInt_t cutlo = 200;
+  //FIXME: MAKE THIS CUT CONFIGURABLE - SEPARATELY FOR EACH BIT!
+  const UInt_t cutlo = 0;
   const UInt_t cuthi = 1500;
   
-  for (int ihit = 0; ihit < dataloc->NumHits(); ihit++) {
+  for (int ihit = 0; ihit < dataloc->NumHits(); ++ihit) {
     if (dataloc->Get(ihit) > cutlo && dataloc->Get(ihit) < cuthi) {
       bits.SetBitNumber(ibit);
       evtypebits |= BIT(ibit);

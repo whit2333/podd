@@ -12,35 +12,41 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "THaDetectorBase.h"
-#include <TRef.h>
+#include "THaDetector.h"
+#include "TRef.h"
+
+class THaApparatus;
 
 class THaSubDetector : public THaDetectorBase {
   
 public:
   virtual ~THaSubDetector();
   
-  THaDetectorBase*  GetDetector() const            {
-    return static_cast<THaDetectorBase*>(fDetector.GetObject());
+  // Get parent (sub)detector (one level up)
+  THaDetectorBase* GetParent() const {
+    return static_cast<THaDetectorBase*>(fParent.GetObject());
   }
+  // For backward compatibility
+  THaDetectorBase* GetDetector() const { return GetParent(); }
+  // Search for parent THaDetector (not subdetector)
+  THaDetector*     GetMainDetector() const;
+  THaApparatus*    GetApparatus() const;
   
-  virtual void      SetDetector( THaDetectorBase* );
+  virtual void     SetParent( THaDetectorBase* );
+  void             SetDetector( THaDetectorBase* det ) { SetParent(det); }
 
 protected:
 
-  virtual const char* GetDBFileName() const 
-    { return GetDetector() ? GetDetector()->GetDBFileName() : GetPrefix(); }
-
-//Only derived classes may construct me
-
-  THaSubDetector( const char* name, const char* description,
-		  THaDetectorBase* detector );  
-
+  virtual const char* GetDBFileName() const;
   virtual void MakePrefix();
 
+  //Only derived classes may construct me
+  THaSubDetector( const char* name, const char* description,
+		  THaDetectorBase* parent );  
+  THaSubDetector() {} // For ROOT RTTI
+
  private:
-  TRef fDetector;        // (Sub)detector containing this subdetector
-                         //  Use GetDetector instead to find the parent
+  TRef fParent;        // (Sub)detector containing this subdetector
 
  public:
   ClassDef(THaSubDetector,1)   //ABC for a subdetector

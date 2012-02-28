@@ -23,6 +23,8 @@
 #include "THaCodaDecoder.h"
 #include "THaGlobals.h"
 #include "THaAnalyzer.h"
+//#include "THaFileDB.h"
+#include "THaTextvars.h"
 #include "ha_compiledata.h"
 
 #include "TTree.h"
@@ -33,15 +35,17 @@
 
 using namespace std;
 
-THaVarList* gHaVars    = NULL;  //List of symbolic analyzer variables
-THaCutList* gHaCuts    = NULL;  //List of global analyzer cuts/tests
-TList*      gHaApps    = NULL;  //List of Apparatuses
-TList*      gHaScalers = NULL;  //List of scaler groups
-TList*      gHaPhysics = NULL;  //List of physics modules
-THaRunBase* gHaRun     = NULL;  //The currently active run
-TClass*     gHaDecoder = NULL;  //Class(!) of decoder to use
+THaVarList*  gHaVars     = NULL;  // List of symbolic analyzer variables
+THaCutList*  gHaCuts     = NULL;  // List of global analyzer cuts/tests
+TList*       gHaApps     = NULL;  // List of Apparatuses
+TList*       gHaScalers  = NULL;  // List of scaler groups
+TList*       gHaPhysics  = NULL;  // List of physics modules
+THaRunBase*  gHaRun      = NULL;  // The currently active run
+TClass*      gHaDecoder  = NULL;  // Class(!) of decoder to use
+THaDB*       gHaDB       = NULL;  // Database system to use
+THaTextvars* gHaTextvars = NULL;  // Text variable definitions
 
-THaInterface* THaInterface::fgAint = NULL;  //Pointer to this interface
+THaInterface* THaInterface::fgAint = NULL;  // Pointer to this interface
 
 static TString fgTZ;
 
@@ -71,6 +75,9 @@ THaInterface::THaInterface( const char* appClassName, int* argc, char** argv,
   gHaPhysics = new TList;
   // Use the standard CODA file decoder by default
   gHaDecoder = THaCodaDecoder::Class();
+  // File-based database by default
+  //  gHaDB      = new THaFileDB();
+  gHaTextvars = new THaTextvars;
 
   // Set the maximum size for a file written by Podd contained by the TTree
   //  putting it to 1.5 GB, down from the default 1.9 GB since something odd
@@ -140,6 +147,8 @@ THaInterface::~THaInterface()
     // Clean up the analyzer object if defined
     delete THaAnalyzer::GetInstance();
     // Delete all global lists and objects contained in them
+    delete gHaTextvars; gHaTextvars=0;
+    //    delete gHaDB;           gHaDB = 0;
     delete gHaPhysics;   gHaPhysics=0;
     delete gHaScalers;   gHaScalers=0;
     delete gHaApps;         gHaApps=0;
@@ -178,7 +187,9 @@ void THaInterface::PrintLogo( Bool_t lite )
    const char* halla_version = HA_VERSION;
    //   const char* halla_date = Form("%d %s %4d",24,months[2-1],2003);
 
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,18,0)
    if( !lite ) {
+#endif
      Printf("  ************************************************");
      Printf("  *                                              *");
      Printf("  *            W E L C O M E  to  the            *");
@@ -192,7 +203,9 @@ void THaInterface::PrintLogo( Bool_t lite )
      Printf("  *        http://hallaweb.jlab.org/root/        *");
      Printf("  *                                              *");
      Printf("  ************************************************");
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,18,0)
    }
+#endif
 
 #ifdef R__UNIX
    //   if (!strcmp(gGXW->GetName(), "X11TTF"))

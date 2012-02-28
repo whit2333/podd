@@ -18,6 +18,8 @@
 #include "TMath.h"
 
 #include <cstring>
+#include <cstdlib>
+#include <cstdio>
 
 ClassImp(THaCherenkov)
 

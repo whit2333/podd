@@ -19,7 +19,7 @@
 //
 // Constructors and Set() determine the data type automatically.
 // Supported types are 
-//    Double_t, Float_t, Long_t, ULong_t, Int_t, UInt_t, 
+//    Double_t, Float_t, Long64_t, ULong64_t, Int_t, UInt_t, 
 //    Short_t, UShort_t, Char_t, Byte_t
 //
 // Arrays can be defined as follows:
@@ -56,11 +56,24 @@
 #include "TMethodCall.h"
 #include "TObjArray.h"
 #include "TClass.h"
+#include <cassert>
 
 using namespace std;
 
 const Int_t    THaVar::kInvalidInt = -1;
 const Double_t THaVar::kInvalid    = 1e38;
+
+const char* var_type_name[] = { 
+  "kDouble", "kFloat", "kLong", "kULong", "kInt", "kUInt",
+  "kShort", "kUShort", "kChar", "kByte", 
+  "kObject", "kTString", "kString",
+  "kIntV", "kFloatV", "kDoubleV", "kIntM", "kFloatM", "kDoubleM",
+  "kDoubleP", "kFloatP", "kLongP", "kULongP", "kIntP", "kUIntP", 
+  "kShortP", "kUShortP", "kCharP", "kByteP",
+  "kObjectP",
+  "kDouble2P", "kFloat2P", "kLong2P", "kULong2P", "kInt2P", "kUInt2P", 
+  "kShort2P", "kUShort2P", "kChar2P", "kByte2P",
+  "kObject2P" };
 
 //_____________________________________________________________________________
 THaVar::THaVar( const THaVar& rhs ) :
@@ -138,13 +151,19 @@ Bool_t THaVar::HasSameSize( const THaVar* rhs ) const
 const char* THaVar::GetTypeName( VarType itype )
 {
   static const char* const type[] = { 
-    "Double_t", "Float_t", "Long_t", "ULong_t", "Int_t", "UInt_t", "Short_t", 
-    "UShort_t", "Char_t", "Byte_t", "TObject",
-    "Double_t*", "Float_t*", "Long_t*", "ULong_t*", "Int_t*", "UInt_t*", 
-    "Short_t*", "UShort_t*", "Char_t*", "Byte_t*", "TObject*",
-    "Double_t**", "Float_t**", "Long_t**", "ULong_t**", "Int_t**", "UInt_t**", 
-    "Short_t**", "UShort_t**", "Char_t**", "Byte_t**", "TObject**" };
+    "Double_t", "Float_t", "Long64_t", "ULong64_t", "Int_t", "UInt_t",
+    "Short_t",  "UShort_t", "Char_t", "Byte_t",
+    "TObject", "TString", "string",
+    "vector<int>", "vector<float>", "vector<double>", "vector< vector<int> >",
+    "vector< vector<float> >", "vector< vector<double> >",
+    "Double_t*", "Float_t*", "Long64_t*", "ULong64_t*", "Int_t*", "UInt_t*", 
+    "Short_t*", "UShort_t*", "Char_t*", "Byte_t*",
+    "TObject*",
+    "Double_t**", "Float_t**", "Long_t64**", "ULong_t64**", "Int_t**",
+    "UInt_t**",  "Short_t**", "UShort_t**", "Char_t**", "Byte_t**",
+    "TObject**" };
 
+  assert( itype >= 0 && (size_t)itype < sizeof(type)/sizeof(char*) );
   return type[itype];
 }
 
@@ -152,13 +171,13 @@ const char* THaVar::GetTypeName( VarType itype )
 size_t THaVar::GetTypeSize( VarType itype )
 {
   static const size_t size[] = { 
-    sizeof(Double_t), sizeof(Float_t), sizeof(Long_t), sizeof(ULong_t), 
+    sizeof(Double_t), sizeof(Float_t), sizeof(Long64_t), sizeof(ULong64_t), 
     sizeof(Int_t), sizeof(UInt_t), sizeof(Short_t), sizeof(UShort_t), 
     sizeof(Char_t), sizeof(Byte_t), 0, 
-    sizeof(Double_t), sizeof(Float_t), sizeof(Long_t), sizeof(ULong_t), 
+    sizeof(Double_t), sizeof(Float_t), sizeof(Long64_t), sizeof(ULong64_t), 
     sizeof(Int_t), sizeof(UInt_t), sizeof(Short_t), sizeof(UShort_t), 
     sizeof(Char_t), sizeof(Byte_t), 0,
-    sizeof(Double_t), sizeof(Float_t), sizeof(Long_t), sizeof(ULong_t),
+    sizeof(Double_t), sizeof(Float_t), sizeof(Long64_t), sizeof(ULong64_t),
     sizeof(Int_t), sizeof(UInt_t), sizeof(Short_t), sizeof(UShort_t), 
     sizeof(Char_t), sizeof(Byte_t), 0  };
 
@@ -222,9 +241,9 @@ Double_t THaVar::GetValueFromObject( Int_t i ) const
       case kFloat:
 	return static_cast<Double_t>( *(((Float_t*)loc))  );
       case kLong:
-	return static_cast<Double_t>( *(((Long_t*)loc))   );
+	return static_cast<Double_t>( *(((Long64_t*)loc))   );
       case kULong:
-	return static_cast<Double_t>( *(((ULong_t*)loc))  );
+	return static_cast<Double_t>( *(((ULong64_t*)loc))  );
       case kInt:
 	return static_cast<Double_t>( *(((Int_t*)loc))    );
       case kUInt:
@@ -242,9 +261,9 @@ Double_t THaVar::GetValueFromObject( Int_t i ) const
       case kFloatP:
 	return static_cast<Double_t>( **(((Float_t**)loc))  );
       case kLongP:
-	return static_cast<Double_t>( **(((Long_t**)loc))   );
+	return static_cast<Double_t>( **(((Long64_t**)loc))   );
       case kULongP:
-	return static_cast<Double_t>( **(((ULong_t**)loc))  );
+	return static_cast<Double_t>( **(((ULong64_t**)loc))  );
       case kIntP:
 	return static_cast<Double_t>( **(((Int_t**)loc))    );
       case kUIntP:

@@ -6,26 +6,25 @@ export WITH_DEBUG = 1
 # Compile debug version
 #export DEBUG = 1
 
-# Profiling with gprof
-# export PROFILE = 1
-
 # Include libraries for reading from the ET ring
 #  (only for adaq? machines with the Coda libraries )
-# export ONLINE_ET = 1
+#export ONLINE_ET = 1
 #------------------------------------------------------------------------------
 
 # SOVERSION should be numerical only - it becomes the shared lib soversion
 # EXTVERS (optional) describes the build, e.g. "dbg", "et", "gcc33" etc.
-SOVERSION  = 1.4
-PATCH   = 12
-VERSION = $(SOVERSION).$(PATCH)
-EXTVERS =
-NAME    = analyzer-$(VERSION)
+SOVERSION  := 1.5
+PATCH   := 22
+VERSION := $(SOVERSION).$(PATCH)
+EXTVERS :=
+#EXTVERS := -et
+NAME    := analyzer-$(VERSION)
+VERCODE := $(shell echo $(subst ., ,$(SOVERSION)) $(PATCH) | awk '{ print $$1*65536 + $$2*256 + $$3 }')
 
 #------------------------------------------------------------------------------
 
-ARCH          = linuxegcs
-#ARCH          = solarisCC5
+ARCH          := linux
+#ARCH          := solarisCC5
 ifndef PLATFORM
 PLATFORM = bin
 endif
@@ -33,61 +32,74 @@ endif
 ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTLIBS     := $(shell root-config --libs)
 ROOTGLIBS    := $(shell root-config --glibs)
+ROOTBIN      := $(shell root-config --bindir)
 
 HA_DIR       := $(shell pwd)
-DCDIR         = hana_decode
-SCALERDIR     = hana_scaler
-LIBDIR        = $(shell pwd)
-HALLALIBS     = -L$(LIBDIR) -lHallA -ldc -lscaler
-SUBDIRS       = $(DCDIR) $(SCALERDIR)
-INCDIRS       = $(addprefix $(HA_DIR)/, src $(SUBDIRS))
+DCDIR        := hana_decode
+SCALERDIR    := hana_scaler
+LIBDIR       := $(shell pwd)
+HALLALIBS    := -L$(LIBDIR) -lHallA -ldc -lscaler
+SUBDIRS      := $(DCDIR) $(SCALERDIR)
+INCDIRS      := $(addprefix $(HA_DIR)/, src $(SUBDIRS))
+HA_DICT      := haDict
 
-LIBS          = 
-GLIBS         = 
+LIBS         := 
+GLIBS        := 
 
-INCLUDES      = $(ROOTCFLAGS) $(addprefix -I, $(INCDIRS) )
+INCLUDES     := $(ROOTCFLAGS) $(addprefix -I, $(INCDIRS) )
 
 ifeq ($(ARCH),solarisCC5)
 # Solaris CC 5.0
-CXX           = CC
+CXX          := CC
 ifdef DEBUG
-  CXXFLG      = -g
-  LDFLAGS     = -g
+  CXXFLG     := -g
+  LDFLAGS    := -g
+  DEFINES    :=
 else
-  CXXFLG      = -O
-  LDFLAGS     = -O
+  CXXFLG     := -O
+  LDFLAGS    := -O
+  DEFINES    := -DNDEBUG
 endif
 CXXFLG       += -KPIC
-LD            = CC
-LDCONFIG      =
-SOFLAGS       = -G
-SONAME        = -h
-DEFINES       = -DSUNVERS
+LD           := CC
+LDCONFIG     :=
+SOFLAGS      := -G
+SONAME       := -h
+DEFINES      += -DSUNVERS
+DICTCXXFLG   :=
 endif
 
-ifeq ($(ARCH),linuxegcs)
+ifeq ($(ARCH),linux)
 # Linux with egcs (>= RedHat 5.2)
-CXX           = g++
+CXX          := g++
 ifdef DEBUG
-  CXXFLG      = -g -O0
-  LDFLAGS     = -g -O0
+  CXXFLG     := -g -O0
+  LDFLAGS    := -g -O0
+  DEFINES    :=
 else
-  CXXFLG      = -O
-#  CXXFLG      = -O -march=pentium4 #-msse2 -mfpmath=sse
-  LDFLAGS     = -O
+#  CXXFLG     := -O2 -march=pentium4
+  CXXFLG     := -O
+  LDFLAGS    := -O
+  DEFINES    := -DNDEBUG
 endif
-DEFINES       = -DLINUXVERS
+DEFINES      += -DLINUXVERS
 CXXFLG       += -Wall -fPIC
 CXXEXTFLG     = -Woverloaded-virtual
-LD            = g++
-LDCONFIG      = /sbin/ldconfig -n $(LIBDIR)
-SOFLAGS       = -shared
-SONAME        = -Wl,-soname=
+LD           := g++
+LDCONFIG     := /sbin/ldconfig -n $(LIBDIR)
+SOFLAGS      := -shared
+SONAME       := -Wl,-soname=
+#FIXME: should be configure'd:
+CXXVER       := $(shell g++ --version | head -1 | sed 's/.* \([0-9]\)\..*/\1/')
+DEFINES      += $(shell getconf LFS_CFLAGS)
+ifeq ($(CXXVER),4)
+CXXFLAGS     += -Wextra -Wno-missing-field-initializers
+DICTCXXFLG   := -Wno-strict-aliasing 
+endif
+endif
 
 #FIXME: requires gcc 3 or up - test in configure script
 DEFINES       += -DHAS_SSTREAM
-
-endif
 
 ifeq ($(CXX),)
 $(error $(ARCH) invalid architecture)
@@ -96,28 +108,23 @@ endif
 ifdef ONLINE_ET
 
 # ONLIBS is needed for ET
-  ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
-  ET_CFLAGS = -02 -fPIC -I. $(ET_AC_FLAGS) -DLINUXVERS
+  ET_AC_FLAGS := -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
+  ET_CFLAGS := -02 -fPIC -I. $(ET_AC_FLAGS) -DLINUXVERS
 # CODA environment variable must be set.  Examples are
-#   CODA = /adaqfs/coda/2.2        (in adaq cluster)
-#   CODA = /data7/user/coda/2.2    (on haplix cluster)
-  LIBET = $(CODA)/Linux/lib/libet.so
-  ONLIBS = $(LIBET) -lieee -lpthread -ldl -lresolv
+#   CODA:= /adaqfs/coda/2.2        (in adaq cluster)
+#   CODA:= /data7/user/coda/2.2    (on haplix cluster)
+  LIBET  := $(CODA)/Linux/lib/libet.so
+  ONLIBS := $(LIBET) -lieee -lpthread -ldl -lresolv
 
   DEFINES  += -DONLINE_ET
   HALLALIBS += $(ONLIBS)
 endif
 
 
-MAKEDEPEND    = gcc
+MAKEDEPEND   := gcc
 
 ifdef WITH_DEBUG
 DEFINES      += -DWITH_DEBUG
-endif
-
-ifdef PROFILE
-CXXFLG       += -pg
-LDFLAGS      += -pg
 endif
 
 CXXFLAGS      = $(CXXFLG) $(CXXEXTFLG) $(INCLUDES) $(DEFINES)
@@ -125,11 +132,11 @@ CFLAGS        = $(CXXFLG) $(INCLUDES) $(DEFINES)
 LIBS         += $(ROOTLIBS) $(SYSLIBS)
 GLIBS        += $(ROOTGLIBS) $(SYSLIBS)
 
-export ARCH LIBDIR CXX LD SOFLAGS SONAME CXXFLG LDFLAGS DEFINES VERSION SOVERSION CXXEXTFLG
+export ARCH LIBDIR CXX LD SOFLAGS SONAME CXXFLG LDFLAGS DEFINES VERSION SOVERSION VERCODE CXXEXTFLG
 
 #------------------------------------------------------------------------------
 
-SRC           = src/THaFormula.C src/THaVform.C src/THaVhist.C \
+SRC          := src/THaFormula.C src/THaVform.C src/THaVhist.C \
 		src/THaVar.C src/THaVarList.C src/THaCut.C \
 		src/THaNamedList.C src/THaCutList.C src/THaInterface.C \
 		src/THaRunBase.C src/THaCodaRun.C src/THaRun.C \
@@ -151,8 +158,7 @@ SRC           = src/THaFormula.C src/THaVform.C src/THaVhist.C \
 		src/THaCluster.C src/THaArrayString.C \
 		src/THaScintillator.C src/THaShower.C \
 		src/THaTotalShower.C src/THaCherenkov.C \
-		src/THaEvent.C src/THaRawEvent.C src/THaTrackID.C \
-		src/THaVDC.C src/THaVDCEvent.C \
+		src/THaEvent.C src/THaTrackID.C src/THaVDC.C \
 		src/THaVDCPlane.C src/THaVDCUVPlane.C src/THaVDCUVTrack.C \
 		src/THaVDCWire.C src/THaVDCHit.C src/THaVDCCluster.C \
 		src/THaVDCTimeToDistConv.C src/THaVDCTrackID.C \
@@ -164,7 +170,6 @@ SRC           = src/THaFormula.C src/THaVform.C src/THaVhist.C \
 		src/THaExtTarCor.C src/THaDebugModule.C src/THaTrackInfo.C \
 		src/THaGoldenTrack.C \
 		src/THaPrimaryKine.C src/THaSecondaryKine.C \
-		src/THaDB.C src/THaDBFile.C \
 	        src/THaCoincTime.C src/THaS2CoincTime.C \
                 src/THaTrackProj.C \
 		src/THaPostProcess.C src/THaFilter.C \
@@ -172,43 +177,54 @@ SRC           = src/THaFormula.C src/THaVform.C src/THaVhist.C \
 		src/THaBeamModule.C src/THaBeamInfo.C src/THaEpicsEbeam.C \
 		src/THaBeamEloss.C \
 		src/THaTrackOut.C src/THaTriggerTime.C \
-		src/THaPhotoReaction.C src/THaSAProtonEP.C
+		src/THaHelicityDet.C src/THaG0HelicityReader.C \
+		src/THaG0Helicity.C src/THaADCHelicity.C src/THaHelicity.C \
+		src/THaPhotoReaction.C src/THaSAProtonEP.C \
+		src/THaTextvars.C src/THaQWEAKHelicity.C \
+		src/THaQWEAKHelicityReader.C
 
 ifdef ONLINE_ET
 SRC += src/THaOnlRun.C
 endif
 
-OBJ           = $(SRC:.C=.o)
-RCHDR         = $(SRC:.C=.h) src/THaGlobals.h
-HDR           = $(RCHDR) src/VarDef.h src/VarType.h src/ha_compiledata.h src/Ext_TRotation.h
-DEP           = $(SRC:.C=.d) src/main.d
-OBJS          = $(OBJ) haDict.o
-HA_LINKDEF    = src/HallA_LinkDef.h
+OBJ          := $(SRC:.C=.o)
+RCHDR        := $(SRC:.C=.h) src/THaGlobals.h
+HDR          := $(RCHDR) src/VarDef.h src/VarType.h src/ha_compiledata.h
+DEP          := $(SRC:.C=.d) src/main.d
+OBJS         := $(OBJ) $(HA_DICT).o
+HA_LINKDEF   := src/HallA_LinkDef.h
 
-LIBHALLA      = $(LIBDIR)/libHallA.so
-LIBDC         = $(LIBDIR)/libdc.so
-LIBSCALER     = $(LIBDIR)/libscaler.so
+LIBHALLA     := $(LIBDIR)/libHallA.so
+LIBDC        := $(LIBDIR)/libdc.so
+LIBSCALER    := $(LIBDIR)/libscaler.so
 
 #------ Extra libraries -------------------------
-LNA           = NormAna
-LIBNORMANA    = $(LIBDIR)/lib$(LNA).so
-LNA_DICT      = $(LNA)Dict
-LNA_SRC       = src/THa$(LNA).C
-LNA_OBJ       = $(LNA_SRC:.C=.o)
-LNA_HDR       = $(LNA_SRC:.C=.h)
-LNA_DEP       = $(LNA_SRC:.C=.d)
-LNA_OBJS      = $(LNA_OBJ) $(LNA_DICT).o
-LNA_LINKDEF   = src/$(LNA)_LinkDef.h
+LNA          := NormAna
+LIBNORMANA   := $(LIBDIR)/lib$(LNA).so
+LNA_DICT     := $(LNA)Dict
+LNA_SRC      := src/THa$(LNA).C
+LNA_OBJ      := $(LNA_SRC:.C=.o)
+LNA_HDR      := $(LNA_SRC:.C=.h)
+LNA_DEP      := $(LNA_SRC:.C=.d)
+LNA_OBJS     := $(LNA_OBJ) $(LNA_DICT).o
+LNA_LINKDEF  := src/$(LNA)_LinkDef.h
 #------------------------------------------------
 
-PROGRAMS      = analyzer $(LIBNORMANA)
+PROGRAMS     := analyzer $(LIBNORMANA)
 
 all:            subdirs
 		set -e; for i in $(PROGRAMS); do $(MAKE) $$i; done
 
 src/ha_compiledata.h:	Makefile
-		echo "#define HA_INCLUDEPATH \"$(INCDIRS)\"" > $@
-		echo "#define HA_VERSION \"$(VERSION)$(EXTVERS)\"" >> $@
+		@echo "#ifndef ANALYZER_COMPILEDATA_H" > $@
+		@echo "#define ANALYZER_COMPILEDATA_H" >> $@
+		@echo "" >> $@
+		@echo "#define HA_INCLUDEPATH \"$(INCDIRS)\"" >> $@
+		@echo "#define HA_VERSION \"$(VERSION)$(EXTVERS)\"" >> $@
+		@echo "#define ANALYZER_VERSION_CODE $(VERCODE)" >> $@
+		@echo "#define ANALYZER_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))" >> $@
+		@echo "" >> $@
+		@echo "#endif" >> $@
 
 subdirs:
 		set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i; done
@@ -258,9 +274,14 @@ $(LIBSCALER):	$(LIBSCALER).$(SOVERSION)
 		rm -f $@
 		ln -s $< $@
 
-haDict.C: $(RCHDR) $(HA_LINKDEF)
-	@echo "Generating dictionary haDict..."
-	$(ROOTSYS)/bin/rootcint -f $@ -c $(INCLUDES) $(DEFINES) $^
+ifeq ($(ARCH),linux)
+$(HA_DICT).o:  $(HA_DICT).C
+	$(CXX) $(CXXFLAGS) $(DICTCXXFLG) -o $@ -c $^
+endif
+
+$(HA_DICT).C: $(RCHDR) $(HA_LINKDEF)
+	@echo "Generating dictionary $(HA_DICT)..."
+	$(ROOTBIN)/rootcint -f $@ -c $(INCLUDES) $(DEFINES) $^
 
 
 #---------- Extra libraries ----------------------------------------
@@ -271,17 +292,21 @@ $(LIBNORMANA):	$(LNA_HDR) $(LNA_OBJS)
 
 $(LNA_DICT).C:	$(LNA_HDR) $(LNA_LINKDEF)
 		@echo "Generating dictionary $(LNA_DICT)..."
-		$(ROOTSYS)/bin/rootcint -f $@ -c $(INCLUDES) $(DEFINES) $^
+		rootcint -f $@ -c $(INCLUDES) $(DEFINES) $^
+
+libPodd.a:	$(OBJS) $(LNA_OBJS) subdirs
+		echo "Making libPodd.a..."
+		ar rcs $@ $(OBJS) $(LNA_OBJS) $(DCDIR)/*.o $(SCALERDIR)/*.o
 
 #---------- Main program -------------------------------------------
 analyzer:	src/main.o $(LIBDC) $(LIBSCALER) $(LIBHALLA)
 		$(LD) $(LDFLAGS) $< $(HALLALIBS) $(GLIBS) -o $@
 
-
 #---------- Maintenance --------------------------------------------
 clean:
 		set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i clean; done
-		rm -f *.so *.a $(PROGRAMS) *.o *Dict.* *~ src/ha_compiledata.h
+		rm -f *.so *.a $(PROGRAMS) *.o $(HA_DICT).* $(LNA_DICT).* *~ 
+		rm -f src/ha_compiledata.h
 		cd src; rm -f *.o *~
 
 realclean:	clean
@@ -294,9 +319,9 @@ srcdist:
 		gtar czv -C .. -f ../$(NAME).tar.gz -X .exclude \
 		 -V "JLab/Hall A C++ Analysis Software "$(VERSION)" `date -I`"\
 		 $(NAME)/.exclude $(NAME)/ChangeLog \
-		 $(NAME)/src $(NAME)/examples \
-		 $(NAME)/DB $(NAME)/$(DCDIR) $(NAME)/$(SCALERDIR) \
-		 $(NAME)/Makefile $(NAME)/docs $(NAME)/Calib $(NAME)/contrib
+		 $(NAME)/src $(NAME)/$(DCDIR) $(NAME)/$(SCALERDIR) \
+		 $(NAME)/Makefile 
+                 # $(NAME)/DB $(NAME)/examples \# $(NAME)/docs $(NAME)/Calib $(NAME)/contrib
 
 cvsdist:	srcdist
 		cp ../$(NAME).tar.gz ../$(NAME)-cvs.tar.gz
@@ -329,7 +354,7 @@ endif
 		ln -s $(NAME) $(ANALYZER)/$(PLATFORM)/analyzer
 		set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i install; done
 
-.PHONY: all clean realclean srcdist cvsdist subdirs
+.PHONY: all clean realclean srcdist cvsdist subdirs static
 
 
 ###--- DO NOT CHANGE ANYTHING BELOW THIS LINE UNLESS YOU KNOW WHAT 

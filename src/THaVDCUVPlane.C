@@ -28,7 +28,6 @@ THaVDCUVPlane::THaVDCUVPlane( const char* name, const char* description,
   // Constructor
 
   // Create the U and V planes
-  // FIXME: 'this' pointer is stored twice in the planes
   fU = new THaVDCPlane( "u", "U plane", this );
   fV = new THaVDCPlane( "v", "V plane", this );
 
@@ -57,8 +56,8 @@ THaDetectorBase::EStatus THaVDCUVPlane::Init( const TDatime& date )
   if( IsZombie() || !fV || !fU )
     return fStatus = kInitError;
 
-  if( GetDetector() )
-    fOrigin = GetDetector()->GetOrigin();
+  if( GetParent() )
+    fOrigin = GetParent()->GetOrigin();
 
   EStatus status;
   if( (status = THaSubDetector::Init( date )) ||
@@ -71,17 +70,15 @@ THaDetectorBase::EStatus THaVDCUVPlane::Init( const TDatime& date )
   TVector3 z( 0.0, 0.0, fU->GetZ() );
   fOrigin += z; 
 
-  //Double_t vdcAngle = fVDC->GetVDCAngle();  // Get angle of the VDC
   Double_t uwAngle  = fU->GetWAngle();      // Get U plane Wire angle
   Double_t vwAngle  = fV->GetWAngle();      // Get V plane Wire angle
-  fVUWireAngle = vwAngle - uwAngle;    // Difference between vwAngle and
-                                       // uwAngle
+
   // Precompute and store values for efficiency
   fSin_u   = TMath::Sin( uwAngle );
   fCos_u   = TMath::Cos( uwAngle );
   fSin_v   = TMath::Sin( vwAngle );
   fCos_v   = TMath::Cos( vwAngle );
-  fSin_vu  = TMath::Sin( fVUWireAngle );
+  fInv_sin_vu = 1.0/TMath::Sin( vwAngle-uwAngle );
 
   return fStatus = kOK;
 }
@@ -196,16 +193,21 @@ Int_t THaVDCUVPlane::CalcUVTrackCoords()
 }
 
 //_____________________________________________________________________________
+void THaVDCUVPlane::Clear( Option_t* opt )
+{ 
+  // Clear event-by-event data
+  fU->Clear(opt);
+  fV->Clear(opt);
+  fUVTracks->Clear();
+}
+
+//_____________________________________________________________________________
 Int_t THaVDCUVPlane::Decode( const THaEvData& evData )
 {
   // Convert raw data into good stuff
 
-  Clear();
-
-  // Decode each plane
   fU->Decode(evData);
   fV->Decode(evData);  
-
   return 0;
 }
 

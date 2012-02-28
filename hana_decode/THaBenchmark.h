@@ -1,3 +1,6 @@
+#ifndef THaBenchmark_
+#define THaBenchmark_
+
 //_____________________________________________________________________________
 //
 // THaBenchmark utility class
@@ -26,4 +29,16 @@ public:
 	Warning("Start","too many benches");
     }
   }
+
+  virtual void Print(Option_t *name="") const {
+    if (name && name[0]!='\0') TBenchmark::Print(name);
+    else {
+      for (int i=0; i<fNbench; i++) {
+	TBenchmark::Print( (fNames[i]).Data() );
+      }
+    }
+  }
+  ClassDef(THaBenchmark,0)   // TBenchmark with true start/stop mode
 };
+
+#endif

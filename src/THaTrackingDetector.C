@@ -4,11 +4,11 @@
 //
 // THaTrackingDetector
 //
-// Abstract base class for a generic Hall A tracking detector. 
+// Abstract base class for a generic tracking detector. 
 //
 // This is a special THaSpectrometerDetector that is capable of
-// finding particle tracks used for momentum analysis and target 
-// reconstruction. This is usually a VDC.
+// finding particle tracks. It does not need to find track vertices
+// (target coordinates) - this is usually done by the enclosing apparatus.
 //
 // Note: The FPP is NOT a "tracking detector" in this scheme because,
 // with the present FPP algorithms, it is not used for calculating the 
@@ -75,7 +75,7 @@ THaTrack* THaTrackingDetector::AddTrack( TClonesArray& tracks,
     if( i > c.GetLast() || !c.At(i) )  new( c[i] ) THaPIDinfo( ndet, npart );
     pid = static_cast<THaPIDinfo*>( c.At(i) );
   
-  } else {
+  } else if( fDebug>0 ) {
     ::Warning("THaTrackingDetector::AddTrack", "No spectrometer defined for "
 	      "detector %s. Track has no PID and vertex info.", GetName());
   }

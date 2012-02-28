@@ -1,620 +1,1906 @@
-2008-09-19 12:39  ole
+2011-03-13 23:43  ole
 
-	* Makefile: Version is 1.4.12
+	* Makefile: Version is 1.5.22
 
-2008-09-19 12:38  ole
+2011-03-13 23:38  ole
 
-	* hana_decode/THaEpics.C, hana_scaler/THaScalerDB.h, src/THaDB.C,
-	  src/THaDecData.C, src/THaOutput.h: Patches for gcc 4.3/Fedora 9
-	  (trivial missing #includes)
+	* src/THaDecData.C: Change low TDC cut to 0 per request of current
+	  experiment.  These cuts REALLY should be in a database.
 
-2008-09-19 12:35  ole
+2011-03-13 23:32  ole
 
-	* src/: THaDecData.C, THaFormula.C, THaNormAna.C: Add missing casts
-	  and brackets that cause warnings from gcc 4.3
+	* src/THaReactionPoint.C: Fix a dumb beginner's bug that caused all
+	  except for the first track in the track array to be assigned
+	  incorrect vertex data.
 
-2008-09-19 12:34  ole
+2011-02-16 09:57  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaQWEAKHelicity.C,
+	  src/THaQWEAKHelicity.h, src/THaQWEAKHelicityReader.C,
+	  src/THaQWEAKHelicityReader.h: Version is 1.5.21
+
+	  Add initial version of THaQWEAKHelicity class from Julie Roche.
+	  This code is somewhat preliminary. Among other things, the
+	  database reader is not yet implemented and parameters are
+	  hardcoded.
+
+2011-02-15 15:39  ole
+
+	* Makefile: Version is 1.5.20
+
+2011-02-15 15:33  ole
+
+	* src/THaDecData.C: Add and/or update several comments.  Slight
+	  code cleanup. No change in functionality.
+
+2011-02-09 14:41  ole
+
+	* src/THaAnalysisObject.C: Increase maximum size of a single
+	  database key/value line (including continuation lines) from 16
+	  kiB to 1 MiB.
+
+2011-01-29 09:54  ole
+
+	* src/THaDetMap.C: Add CAEN 1190 module (from Larry Selvy)
+
+2011-01-27 00:43  ole
+
+	* Makefile: Version is 1.5.18
+
+2011-01-27 00:42  ole
+
+	* hana_decode/: THaCodaDecoder.C, THaCrateMap.C: Add support for
+	  decoding CAEN 1190 (from Larry Selvy)
+
+2010-12-20 13:49  ole
+
+	* Makefile: Version is 1.5.17
+
+2010-12-20 13:48  ole
+
+	* src/THaSpectrometer.C: Correct wording in database error message
+
+2010-12-20 13:47  ole
+
+	* src/THaAnalyzer.C: Prevent unnecessary reading of one additional
+	  event if event count limit reached
+
+2010-12-06 18:15  ole
+
+	* Makefile: Version is 1.5.16
+
+2010-10-08 09:41  rom
+
+	* hana_scaler/: THaScaler.C, THaScaler.h: remove type casts to
+	  unsigned long that had caused problems on 64-bit machines.  This
+	  now compiles without warning and runs identically on 64-bit and
+	  32-bit
+
+2010-10-06 14:42  ole
+
+	* hana_decode/THaEpics.C: Bob's patched version to prevent EPICS
+	  truncation.
+
+2010-10-06 14:41  ole
+
+	* Makefile: Version is 1.5.15
+
+2010-10-04 10:18  ole
+
+	* src/THaVDCPlane.C: Patch to allow a variable number of detector
+	  map lines in the database.
+
+2010-08-26 16:05  ole
+
+	* src/THaAnalyzer.C: Simplify SetCrateMapFileName according to the
+	  improved logic in THaAnalysisObject. Basically, don't let the
+	  function interfere with the user input.
+
+	  Bugfix: Ensure run object is written to the output ROOT file, not
+	  the current directory, which may be wrong if the input comes from
+	  a ROOT file, too.
+
+2010-08-26 15:59  ole
+
+	* src/THaAnalysisObject.C: Extend file name logic of OpenFile(). If
+	  the file name contains a directory separator (/ on Unix), assume
+	  that it is a verbatim database file name.  For example, on Unix,
+
+	  OpenFile("DB/APP.det.txt",...)
+
+	  will try to open ./DB/APP.det.txt, and only that. No
+	  time-dependent database directories will be searched, and $DB_DIR
+	  will be ignored.
+
+	  Also, if the database name already starts with "db_" or ends with
+	  ".dat", respectively, this prefix/suffix is not added again. For
+	  example, all of these
+
+	  OpenFile("db_cratemap.dat" ,...) OpenFile("cratemap", ...)
+	  OpenFile("db_cratemap", ...) OpenFile("cratemap.dat")
+
+	  will try to open "db_cratemap.dat" in the best-matching
+	  time-stamped database directory according to the usual search
+	  rules.
+
+2010-08-21 01:14  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaAnalysisObject.C,
+	  src/THaCutList.C, src/THaGlobals.h, src/THaInterface.C,
+	  src/THaOutput.C, src/THaOutput.h, src/THaTextvars.C,
+	  src/THaTextvars.h: Add support for "text variables" in output and
+	  cut definition files as well as in database files. Text variables
+	  are managed via the new global gHaTextvars, which points to an
+	  instance of THaTextvars. Variables can be referred to by ${name}
+	  in an input file, and ${name} is then automatically replaced by
+	  its value(s). Text variables can be multi-valued in output and
+	  cut definition files, but not in database files. Examples:
+
+	  gHaTextvars->Add("arm","L,R");
+
+	  replay.odef: ${arm}.vdc.u1.wire =>  L.vdc.u1.wire, R.vdc.u1.wire
+
+	  gHaTextvars->Add("BigBite","B")
+
+	  db_B.mwdc.dat: ${BigBite}.mwdc.planeconfig => B.mwdc.planeconfig
+
+	  This facility should make it much easier to manage replay
+	  scripts.
+
+2010-08-18 23:23  ole
+
+	* Makefile, hana_decode/Makefile, hana_scaler/Makefile: Change
+	  $(ROOTSYS)/bin to $(ROOTBIN). $ROOTSYS is deprecated.
+
+2010-08-18 16:29  ole
+
+	* hana_decode/THaEvData.C: Fix bugfix from APEX version: reset
+	  static fgNeedInit in destructor.  (Ensures decoder re-init if a
+	  previous decoder instance already ran.) Can't implement real fix
+	  now because it would not be binary compatible.
+
+2010-08-18 16:16  ole
+
+	* src/THaDecData.C: Merge bugfixes from APEX version: - don't crash
+	  in destructor if histograms no longer exist (e.g. when ROOT
+	  file has been closed) - fix bug in array index calculation if a
+	  "word" variable was defined for   data that is not actually
+	  present in the data stream.  - code cleanup, added comments
+
+	  This entire module should be seriously rewritten.
+
+2010-04-20 14:23  ole
+
+	* src/THaAnalysisObject.C: Catch expections from ReadDatabase()
+	  call. Right now, only std::bad_alloc gets its own error message,
+	  everything else has just a generic message.  Perhaps we should
+	  handle division by zero and similar that are not too unlikely to
+	  happen.
+
+2010-04-07 11:30  ole
+
+	* Makefile: Version is 1.5.13
+
+2010-04-07 11:28  ole
+
+	* hana_decode/THaCodaDecoder.C: Improved diagnostic messages for
+	  CAEN 550 module (VME FADC).
+
+2010-03-30 16:47  ole
+
+	* src/THaAnalysisObject.C: Don't line IsTag() function.  gcc 4.1
+	  seems to have problems with it.
+
+2010-03-25 16:10  ole
+
+	* src/THaVDCPlane.C: Make search for the header of the
+	  plane-specific data in the database (e.g.  [ R.vdc.u1 ] )
+	  case-sensitive, consistent with the rest of the database system.
+
+2010-03-25 16:08  ole
+
+	* src/THaVDC.C: Make search for matrix element section header [
+	  <prefix>.global ] case-sensitive, consistent with the rest of the
+	  database system.
+
+	  In THaVDC, print warning if a particular configuration is
+	  requested (fConfig != "") but not found, and load the first found
+	  section as default.  Also, load the first section even if it
+	  starts with a config header and no particular configuration was
+	  requested. (Previously, if fConfig == "", nothing would get
+	  loaded if the first section started with a tag.) Example in
+	  db_L.vdc.dat:
+
+	  [ L.global ] some numbers that are now completely ignored no
+	  matter what the comment says [ config=highmom ] comment line
+	  describing the matrix elements, ignored t 0 0 0  -1.000 0.05
+	  0.0002 0.000 etc...
+
+	  This section will now be loaded if fConfig == "" or fConfig ==
+	  "highmom".
+
+2010-03-25 15:48  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: If configuration
+	  explicitly set with SetConfig(), let this value override the
+	  settings in the run database. This behavior is consistent with
+	  the rest of the analyzer - the assumption being that anything set
+	  explicitly in a script is usually what one really wants, no
+	  matter the database.	(Though this could backfire if someone
+	  "forgets" a Set command in a script.)
+
+2010-03-25 15:10  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Make static
+	  function IsTag() visible as a member function and change it to
+	  match database tags consistent with the way SeekDBdate and
+	  SeekDBconfig work, i.e. match regexp (.*\[.+\].*).
+
+2010-03-25 13:25  ole
+
+	* src/THaAnalysisObject.C: - Allow empty RHS for database key =
+	  value lines. This allows setting   strings to empty. This may be
+	  useful by iteself, but is also really   needed if one wants to
+	  use a special detector "config" definition only   for some time
+	  periods and then revert to config = "" later.  - Reset fConfig =
+	  "" in ReadRunDatabase if key not found.    Previously, fConfig
+	  would remain unchanged, which was wrong  The rule is that
+	  optional database values are set to their default ("" here) if no
+	  key found.  - Fix various erroneous comments.
+
+2010-03-24 23:54  ole
+
+	* src/: THaVDC.C, THaVDCPlane.C: Patches to allow VDC class to be
+	  used standalone, i.e. even if not part of a spectrometer. (Still
+	  chasing Rob Feuerbach's ghosts.)
+
+2010-03-12 16:09  ole
+
+	* src/THaVar.C: Fix var_type_name[] definition and GetTypeName()
+	  function - update was apparently forgotten when more data types
+	  were added in VarType.h.
+
+2009-12-11 19:35  ole
+
+	* docs/RELEASE_NOTES.html: Minor corrections (title, wording).
+	  Added link to v14 release notes.
+
+2009-12-10 14:54  ole
+
+	* docs/RELEASE_NOTES.html: Update to current version.
+
+2009-11-07 21:21  ole
+
+	* src/THaHRS.C: Remove inline qualifier from GetTrSorting()
+	  function, otherwise it won't link into the dictionary.
+
+2009-11-07 17:03  ole
+
+	* DB/20090101/: db_L.vdc.dat, db_R.vdc.dat: New well-optimized VDC
+	  reconstruction databases from Ge Jin/Doug Higinbotham.
+
+2009-10-05 17:38  ole
+
+	* Makefile: Version is 1.5.12
+
+2009-10-05 17:22  ole
+
+	* src/: THaHRS.C, THaHRS.h: From Jin Huang: Add option to sort
+	  tracks by chi2/dof. This feature can be enabled with
+	  SetTrSorting(kTRUE). It is likely to cause a (minor) performance
+	  hit, but gives a well-defined GoldenTrack.
+
+2009-10-05 16:53  ole
+
+	* src/: THaTrack.C, THaTrack.h: From Jin Huang: Make tracks
+	  sortable by their (externally calculated) Chi2/dof.  This change
+	  is not strictly binary-compatible, but it seems to me it is not
+	  going to break anything: old clients will just continue to see
+	  non-sortable tracks.
+
+2009-09-09 15:17  ole
+
+	* src/THaRaster.C: From Jin Huang <jinhuang@jlab.org>: Allow more
+	  than one "module" in the detector map.
+
+2009-05-05 13:17  ole
+
+	* Makefile: Version is 1.5.11
+
+2009-05-05 13:17  ole
+
+	* hana_decode/THaEvData.C: Restore forgotten instantiation of
+	  default crate map "cmap" in constructor.
+
+2009-05-04 23:29  ole
+
+	* hana_decode/Makefile: Fix typos in comments
+
+2009-05-04 23:29  ole
+
+	* hana_decode/THaCodaDecoder.C, hana_decode/THaCodaDecoder.h,
+	  hana_decode/THaCrateMap.C, hana_decode/THaCrateMap.h,
+	  hana_decode/THaEvData.C, hana_decode/THaEvData.h,
+	  hana_decode/THaSlotData.C, hana_decode/THaSlotData.h,
+	  src/THaAnalyzer.C, src/THaAnalyzer.h, src/THaRun.C: Two new still
+	  somewhat experimental features:
+
+	  - Implement a new function THaAnalyzer::SetCrateMapFileName(
+	  const char* )   to allow replay scripts to set the crate map
+	  database file name on the   fly. In this way, multiple hardware
+	  configurations can be supported.    For binary compatibility,
+	  this is currently implemented using	 static variables in
+	  THaEvData. Maybe this solution is fine in the end since    one
+	  would usually want decoders in the same replay to use the same
+	  crate map.
+
+	  - Extend the range of error status codes from the decoder
+	  routines.    Instead of just OK/ERR, there can now be return
+	  codes of OK/WARN/ERR/FATAL,	 where (you guessed it) FATAL will
+	  cause the analysis to abort immediately,    while WARN (and
+	  currently also ERR) will cause the analysis to continue    and
+	  just to ignore the current event.
+
+	  I still need to test the production replay with this new code
+	  before I install it in the counting house.
+
+2009-05-04 11:56  ole
+
+	* Makefile: Version is 1.5.10
+
+2009-05-04 11:13  ole
+
+	* src/THaDecData.C: Fix transposed u2/v1 plane labels for VDC
+	  histograms.
+
+2009-02-18 16:11  ole
+
+	* Makefile: Version is 1.5.9
+
+2009-02-18 15:29  ole
+
+	* hana_decode/THaCodaDecoder.C: 1) Add support for the JLab 250MHz
+	  Flash ADC in "Window Raw Data" mode.
+
+	  Example cratemap entry for this module (ROC=16, slot=4):
+
+	  ==== Crate 16 type vme # slot  model	 clear	 header
+	  mask		  nchan   ndata   4	250	1	0x81000000
+	      0xffc00000      16      2048
+
+	  The header is 0x80000000 | (slot<<22). With ndata=2048, up to
+	  2048/16=128 samples per channel can be read. If more samples are
+	  needed, increase ndata.
+
+	  2) Speed up the outer loops in vme_decode. Only loop as many
+	  times as needed, given the parameters from the crate map.
+
+	  3) Fix a bug in physics decode where evbuffer[3] was incorrectly
+	  taken to hold the event type. Add several checks for correct
+	  event header signature bits, but comment them out for now to
+	  prevent any effects on the ongoing production replay.
+
+2009-02-16 13:11  ole
+
+	* Makefile: Version is 1.5.8
+
+2009-02-16 13:08  ole
+
+	* src/: THaAnalyzer.C, THaAnalyzer.h: Turn on decoder VERBOSE
+	  messages for verbosity>=3.  Turn on decoder DEBUG messages for
+	  verbosity>=4.  Add function GetDecoder() to allow user access to
+	  decoder class.
+
+2009-02-16 13:06  ole
+
+	* hana_decode/: THaCodaDecoder.C, THaEvData.C, THaEvData.h: Add
+	  methods SetVerbose(), SetDebug(), and EnableBenchmarks() to
+	  decoder.  These replace the hardcoded #defines VERBOSE, DEBUG,
+	  and BENCH, so verbose reporting etc can now be turned on
+	  dynamically by user scripts.
+
+2009-01-22 10:42  ole
+
+	* hana_decode/THaCodaDecoder.C: (From Bryan Moffit) Improve warning
+	  messages for F1 TDCs.
+
+2009-01-06 15:12  ole
+
+	* Makefile, SDK/Makefile, hana_decode/Makefile, hana_decode/evio.C,
+	  hana_scaler/Makefile, src/THaAnalysisObject.C: Add support for
+	  large input files (>2GB).
+
+	  Without additional modifications, the evio code now supports
+	  files up to blocksize * 2GB in size. The default CODA blocksize
+	  is 16k, but may be different depending on how the file was
+	  written. This should be tested further. Also, how does this mesh
+	  with newer CODA?
+
+2009-01-06 14:50  ole
 
 	* Makefile, hana_decode/Makefile, hana_scaler/Makefile: Separate
-	  compiler flags for C++ and plain C compilation.
+	  compiler flags for C++ and plain C compilation (merge from 1.4
+	  branch) This fixes spurious compilation warnings about
+	  unsupported compiler options when compiling C files.
 
-2008-09-15 12:39  ole
+2009-01-06 14:37  ole
 
-	* Makefile: Version is 1.4.11
+	* Makefile: Version is 1.5.6
 
-2008-09-15 12:38  ole
+2008-12-08 10:49  ole
 
-	* hana_decode/haDecode_LinkDef.h: Don't make dictionary for
-	  THaBenchmark since this requires more changes.
+	* src/: THaBeam.C, THaBeam.h: Let Update() get the beam momentum
+	  and polarization from gHaRun, not fRunParam.	This is a bit of a
+	  quick & dirty fix for a problem we sometimes see with split runs
+	  where the fRunParam object of the beam class seems to become
+	  invalid for the continuation segments.  This fix provides the
+	  exact same functionality, but the information will be retrieved
+	  as intended even if THaBeam is not re-initialized at the start of
+	  a segment.
 
-2008-09-15 11:50  ole
+2008-12-05 15:58  rom
 
-	* hana_decode/THaUsrstrutils.C: Merge bugfixes from trunk: Rewrite
-	  string_from_evbuffer to match frontend code.	1.5->1.7
+	* hana_scaler/THaScaler.C: Fix bug in getting time diff (need
+	  helicity as arg instead of clkslot in this particular location)
 
-2008-09-15 11:48  ole
+2008-12-02 13:12  ole
 
-	* hana_decode/THaCodaDecoder.C: Merge bugfix from trunk: don't copy
-	  event buffer in prescale_decode(). 1.13->1.14
+	* SDK/: UserApparatus.cxx, UserScintillator.cxx: Add missing
+	  #includes for ROOT 5.20 to SDK example files
 
-2008-09-15 11:43  ole
+2008-11-18 11:59  ole
 
-	* src/: THaVhist.C, THaVhist.h: Merge bugfix from trunk: crash on
-	  exit from analyzer due to formulas in histograms. THaVhist.C:
-	  1.7->1.8, THaVhist.h: 1.4->1.5
+	* hana_scaler/THaScaler.h, hana_scaler/THaScalerDB.h,
+	  src/THaAnalysisObject.C, src/THaAnalyzer.C, src/THaArrayString.C,
+	  src/THaAvgVertex.C, src/THaBeamEloss.C, src/THaCluster.C,
+	  src/THaCluster.h, src/THaCoincTime.C, src/THaCutList.C,
+	  src/THaDebugModule.C, src/THaDecData.C, src/THaDetMap.C,
+	  src/THaEvent.C, src/THaExtTarCor.C, src/THaFilter.C,
+	  src/THaFormula.C, src/THaFormula.h, src/THaG0Helicity.C,
+	  src/THaG0HelicityReader.C, src/THaGoldenTrack.C,
+	  src/THaNormAna.C, src/THaNormAna.h, src/THaOutput.h,
+	  src/THaPIDinfo.C, src/THaPhotoReaction.C, src/THaPrimaryKine.C,
+	  src/THaRTTI.C, src/THaReacPointFoil.C, src/THaReactionPoint.C,
+	  src/THaRunParameters.C, src/THaSAProtonEP.C,
+	  src/THaScintillator.C, src/THaSecondaryKine.C, src/THaShower.C,
+	  src/THaTrackEloss.C, src/THaTrackOut.C, src/THaTriggerTime.C,
+	  src/THaTwoarmVertex.C, src/THaVDC.C, src/THaVDCAnalyticTTDConv.h,
+	  src/THaVDCCluster.C, src/THaVDCCluster.h, src/THaVDCHit.h,
+	  src/THaVDCPlane.C, src/THaVDCTimeToDistConv.h,
+	  src/THaVDCTrackID.C, src/THaVDCTrackPair.C,
+	  src/THaVDCTrackPair.h, src/THaVDCUVTrack.h, src/THaVarList.C: Fix
+	  gcc 4.3 compilation warnings (unused parameters, empty loop
+	  bodies etc.)
 
-2008-09-15 11:31  ole
+2008-11-18 09:54  ole
 
-	* src/: THaFormula.C, THaFormula.h: Merge support for ROOT 5.16 and
-	  higher from trunk (GetExpFormula()) THaFormula.C: 1.9->1.11,
-	  THaFormula.h: 1.8->1.9
+	* Makefile: Comment out ONLINE_ET, checked in by mistake from
+	  online cluster.
 
-2008-09-15 11:18  ole
+2008-10-31 12:08  ole
 
-	* hana_decode/haDecode_LinkDef.h, src/HallA_LinkDef.h: Merge
-	  improvements from trunk: make dictionaries for
-	  THaScintillator::DataDest, THaBenchmark, THaEvData::RocDat_t
-	  HallA_LinkDef: 1.52->1.53, haDecode_LinkDef.h: 1.8->1.10
+	* Makefile: Version is 1.5.5
 
-2008-09-15 11:13  ole
+2008-10-31 12:05  ole
 
-	* src/THaOutput.C: Merge bigfixes from trunk versions 1.34->1.36:
-	  StripBracket(), warning if "block" finds not matches.
+	* src/THaCutList.h: Back out of previous change (make
+	  EvalBlock(const TList*) static to preserve binary compatibility
+	  in Release 1.5. Postpone the change until Release 1.6, when it is
+	  needed for new ThaAnalyzer.
 
-2008-09-15 11:00  ole
+2008-10-24 13:02  rom
 
-	* hana_scaler/: THaScaler.C, THaScalerDB.C: Add Bob's scaler
-	  bugfixes from trunk (THaScaler.C: 1.21->1.22, THaScalerDB.C:
-	  1.10->1.11)
+	* hana_scaler/: THaScaler.C, THaScaler.h: Add a function
+	  GetTimeDiffSlot, modified defaults for bbite and the default
+	  clkchan.  All this needed for the target state sorting, which was
+	  buggy but I think is ok now.
 
-2008-09-15 10:57  ole
+2008-10-23 16:27  ole
 
-	* src/THaGlobals.h: Merge change 1.5->1.6 from trunk: support for
-	  ROOT 5.20
+	* src/THaCutList.h: Make EvalBlock(TList*) static, which is what it
+	  really is.
 
-2008-02-21 14:44  ole
+2008-10-23 12:47  ole
 
-	* src/: THaInterface.C, THaInterface.h: Fix hiding of virtual
-	  PrintLogo() with ROOT 5.18 and later. As with ROOT, don't print
-	  the startup banner if "lite" set.
+	* Makefile: Version is 1.5.4
 
-2007-12-06 16:53  ole
+2008-10-22 16:36  rom
 
-	* src/THaFormula.h: Set kMAXCODES to TFormula::kMAXFOUND (currently
-	  500) for consistency.
+	* hana_scaler/THaScaler.C: make LoadDataCodaFile work with the
+	  roc11 and roc12 (event stream) data.	Previously it was only
+	  tested with LoadData(const THaEvData& evdata) where it should
+	  still work for Podd.
 
-2007-12-06 16:50  ole
+2008-10-19 15:47  rom
 
-	* src/THaFormula.C: Fix bug introduced with the last change that
-	  caused expression that contain a mix of string and value
-	  variables to return incorrect results in many cases. This is
-	  partly a workaround some pretty poor programming in TFormula.
+	* hana_scaler/THaScaler.C: Add evbbite for the bbite scalers in
+	  event stream (ROC 12), and modify the PrintSummary to print by
+	  target state in addition to helicity state
 
-2007-11-30 19:44  ole
+2008-10-19 14:41  rom
 
-	* Makefile: Version is 1.4.9
+	* hana_scaler/: tscalasy_main.C, tscalfbk_main.C, tscalntup_main.C:
+	  use TMath functions for Sqrt
 
-2007-11-30 19:26  ole
+2008-10-10 17:07  ole
 
-	* src/: THaCut.C, THaFormula.C, THaFormula.h: Add support for
-	  strings defined by global variables of Char_t* type.	If such
-	  variables are used outside of a string context, they fall back to
-	  the previous behavior (pointer to signed byte-sized integer).
+	* Makefile: Version is 1.5.3
 
-2007-11-19 18:36  ole
+2008-10-10 17:04  ole
 
-	* src/THaVform.C: Fix crash on exiting analyzer if multiple
-	  THaVform objects with identical names are defined (as can happen
-	  easily when defining multiple histograms with the same expression
-	  for one of the axes, for example).
+	* src/THaAnalysisObject.C: Bugfix: When checking database time
+	  stamps in IsDBdate(), check all parameters for validity before
+	  accepting the tag. Otherwise, an invalid date will be reported as
+	  good even though the date will not be updated.
 
-2007-07-24 14:25  ole
+2008-10-10 16:16  ole
 
-	* Makefile: Version is 1.4.7
+	* src/: THaCherenkov.C, THaScintillator.C: Add missing #include
+	  <cstdio> for printf() etc.
 
-2007-07-24 14:24  ole
+2008-10-10 16:12  ole
 
-	* src/THaAnalysisObject.C: Pick up bugfix for missing '=' in
-	  database from trunk (rev 1.22)
+	* src/: THaCherenkov.C, THaScintillator.C: Add missing #include
+	  <cstdlib> (reported by gcc 4.3)
 
-2007-07-24 13:25  uid2061
+2008-09-29 12:13  rom
 
-	* src/: THaBeamInfo.C, THaDecData.C, THaHRS.C, THaHelicity.C,
-	  THaHelicity.h, THaRasteredBeam.C, THaSpectrometer.C,
-	  THaSpectrometerDetector.C, THaUnRasteredBeam.C, THaVDCCluster.C,
-	  THaVarList.C: Add missing includes (TMath.h, TList.h etc.)
-	  required to compile against ROOT 5.16.
+	* hana_scaler/: THaScaler.C, THaScaler.h, THaScalerDB.C,
+	  THaScalerDB.h: Add the provision to get normalization data by
+	  target state.  The scaler.map file needs a new directive like
+	  [target-beam Left 00:2 pp:3 pm:4 mp:5 mm:6] for crate Left.  This
+	  defines the mapping of combinations of [target and beam helicity]
+	  to slot number.  This info percolates through the database to
+	  THaScaler, which provides a new interface to get data and rates
+	  from the normalization scaler.  Meanwhile the old interface
+	  (overloaded) remains the same, for experiments that dont have
+	  target flippling.  Note, the scheme is simplified by the fact
+	  that the channels are fanned out to the 5 scalers involved, hence
+	  the channel map is the identical.
 
-2007-07-24 12:58  uid2061
+2008-09-22 13:24  ole
 
-	* src/THaSecondaryKine.h: Add GetPrimary() function, returning
-	  pointer to primary kinematics module.
+	* hana_decode/THaEpics.C, hana_scaler/THaScalerDB.h,
+	  src/THaDecData.C, src/THaOutput.h: Patches for gcc 4.3/Fedora 9
 
-2007-07-17 23:53  ole
+2008-09-03 10:52  ole
 
-	* hana_decode/THaHelicity.C: Include missing TMath.h.
+	* hana_decode/Makefile, hana_scaler/Makefile: Add "static" target.
 
-2007-07-17 23:49  ole
+2008-09-03 10:50  ole
 
-	* src/THaHelicity.C: Include missing TMath.h.
+	* src/THaFormula.C: Small cleanup of silly code in error handling.
 
-2007-04-20 00:31  ole
+2008-09-03 10:48  ole
 
-	* Makefile: Version is 1.4.6
+	* src/THaGlobals.h: Include DllImport.h if necessary to get
+	  definition of R__EXTERN (needed for ROOT 5.20)
 
-2007-04-20 00:27  ole
+2008-07-12 11:45  rom
 
-	* src/THaOutput.C: Fix typo (forgotten ++) in Print().
+	* hana_scaler/ChangeLog: put entries in chronological order
 
-2007-04-20 00:11  ole
+2008-07-12 11:28  rom
 
-	* src/: THaAnalyzer.C, THaAnalyzer.h: Restore signature of
-	  InitModules() to stay binary-compatible (probably paranoid).
+	* hana_scaler/scaler.map: updated database
 
-2007-04-19 23:46  ole
+2008-07-12 11:25  rom
 
-	* src/THaAnalysisObject.C: Cowardly refuse to initialize zombies.
+	* hana_scaler/: tscalhist_main.C, tscalntup_main.C: slightly better
+	  versions from ADAQ account
 
-2007-04-19 17:35  ole
+2008-07-12 11:24  rom
 
-	* src/: THaDecData.C, THaDecData.h: Protect against more than one
-	  instance of THaDecData being created because of static data used
-	  by VdcEff().
+	* hana_scaler/tscalgui_main.C: update to add bigbite scalers to
+	  xscaler
 
-2007-04-19 17:08  ole
+2008-07-12 11:24  rom
 
-	* src/: THaAnalyzer.C, THaAnalyzer.h: When initializing, check for
-	  and remove zombie modules from the modules lists.
+	* hana_scaler/: tscalbad_main.C, tscalbbite_main.C: new standalone
+	  test codes (were on ADAQ).  bbite tests bigbite scalers, and
+	  so-called bad is for checking G0 sequence failures
 
-2007-04-18 16:31  ole
+2008-07-12 11:22  rom
 
-	* src/: THaDecData.C, THaDecData.h: - Fix Init() to support
-	  intelligent reinitialization.    Changing crate/slot definitions
-	  for existing	variables as well as	new definitions are
-	  handled, but removing variables through    reinitialization is
-	  currently not possible (probably indicates user error    anyway).
-	  Should probably print a warning in that case - TBD.  - Improve
-	  efficiency of Decode() and VdcEff(). Still more improvement
-	  possible.  - Other minor improvements (C++ iterators, local loop
-	  variables, Print()).
+	* hana_scaler/: THaScalerGui.C, THaScalerGui.h: Add provision to
+	  normalize by current (requested by Bigbiters), improved help
+	  dialog
 
-2007-04-14 01:23  ole
+2008-07-12 11:20  rom
 
-	* src/THaOutput.C: - Improvements: 1) Fix uninitialized data member
-	  fData of THaScalerKey. This caused	scaler data in the
-	  event-by-event tree to be junk up until the	 first scaler
-	  event.  2) Don't add variables that are used in formulas to the
-	  tree if they	  are already there. This cased some variables to
-	  appear twice (or more!)    in the tree in many cases, depending
-	  on formula definitions.
+	* hana_scaler/: THaScaler.C, THaScaler.h: support to normalize by
+	  current (option for xscaler GUI), reconcile misc small diffs to
+	  ADAQ version e.g. variable names, add bigbite scalers to InitData
+	  (yeah I know it should be done via scaler.map)
 
-	  - Fix bug introduced in prior revision (typo) that prevented
-	  formula variables to be added to the tree altogether.
-	  Interestingly,   this made no difference when drawing the
-	  formulas, so it looks like   the old ROOT bug that motivated this
-	  feature has been fixed and the   adding of variables can now be
-	  skipped (perhaps if a sufficiently   recent ROOT version is
-	  detected). To be done.
+2008-07-12 11:18  rom
 
-	  - More minor code cleanup (preference for STL iterators over
-	  array   indices, efficiency mods).
+	* hana_scaler/Makefile: Add standalone codes for bigbite, Qasy
+	  feedback, so-called bad data (G0 sequence error)
 
-2007-04-14 01:08  ole
+2008-07-12 11:17  rom
 
-	* src/THaOutput.h: Remove unused #includes.  Pass arguments of some
-	  internal functions more efficiently.
+	* hana_scaler/ChangeLog: update documentation about changes
 
-2007-04-13 15:13  ole
+2008-07-09 18:04  rom
 
-	* src/THaOutput.C: Turn benchmarking off for production version.
+	* hana_scaler/THaScalerDB.C: Fix a long-standing bug, first noticed
+	  by Vince Sulkosky about 2 years ago, in which the default flag in
+	  output definitions did not produce default list of scalers for
+	  evleft and evright (evdata).
 
-2007-04-13 14:58  ole
+2008-07-09 18:02  rom
 
-	* Makefile: Version is 1.4.5
+	* hana_scaler/THaScaler.C: fix a bug for evdata (real-time helicity
+	  data as opposed to event type 140) in which the decoder might
+	  accidentally try to loop over the entire structure and would find
+	  fictitous headers.  Should only loop over the crate containing
+	  scalers.  Simple logical fix.  Bug only affects 2-DAQ mode.
 
-2007-04-13 14:46  ole
+2008-05-28 20:24  ole
 
-	* src/: THaOutput.C, THaOutput.h: Bugfix: Update the branch address
-	  when resizing THaOdata array.  This bug was the reason for the
-	  different output file size after speeding up the code.
-	  Fortunately, the speed improvement remains even with this fix.
-	  Also, move less time-critical THaOdata functions into
-	  implementation file.
+	* Makefile: Version is 1.5.1
 
-2007-04-13 12:10  ole
+	  Add libPodd.a, podda, and static targets (for profiling)
 
-	* src/THaVform.C: Replace two more occurrences of
-	  std::vector::size() with call to empty(), which is much faster.
-	  Add some comments.
+2008-04-28 22:27  ole
 
-2007-04-13 12:08  ole
+	* src/THaNormAna.C: Put new THaString::CmpNoCase function in scope.
 
-	* src/: THaOutput.C, THaOutput.h: Remove unneeded includes. Add
-	  some comments.
+2008-04-28 15:36  ole
 
-2007-04-13 12:05  ole
+	* src/: HallA_LinkDef.h, THaAnalysisObject.h, THaNormAna.C,
+	  THaOutput.C, THaOutput.h, THaS2CoincTime.C, THaString.C,
+	  THaString.h, THaVDC.C, THaVform.C, THaVform.h, THaVhist.C,
+	  THaVhist.h: Remove class THaString (illegal inheritance from
+	  non-baseclass std::string).  Replace with set of string utility
+	  functions in namespace THaString.
 
-	* src/THaVform.h: Merge implementations of IsEye() etc. inlines
-	  with the declarations for better readability.
+2008-04-16 17:06  ole
 
-2007-04-13 01:22  ole
+	* src/THaAnalyzer.C: To handle split runs correctly, now also check
+	  old run vs new run using Compare()
 
-	* src/: THaVhist.C, THaVhist.h: Minor mods in order to improve
-	  performance - not much difference.  Inline CheckCut().
+2008-04-16 16:52  ole
 
-2007-04-13 01:21  ole
-
-	* src/THaVar.h: Move GetLen() etc. functions up so they get inlined
-	  in GetValueAsDouble().
-
-2007-04-13 01:19  ole
-
-	* src/: THaVform.C, THaVform.h: Performance improvements: Replace
-	  the string comparisons in functions IsEye() etc. with a simple
-	  integer test. Requires a different type for the fType member
-	  variable, resulting in binary incompatibility - probably not an
-	  issue since this is basically an internal class. Rewrite
-	  Process() to use fType directly. Inline GetData().
-
-2007-04-13 01:11  ole
-
-	* src/THaOutput.h: Make the size of THaOdata objects variable. No
-	  longer zero out the THaOdata data array in Clear(). This is not
-	  necessary because THaOutput always fills the full index range
-	  from 0 to ndata-1 without gaps.  These two changes give a major
-	  speed improvement and also, surprisingly, a significant reduction
-	  of the output file size (output file data consistency to be
-	  verified, but all data seems to be there at first glance).
-
-2007-04-13 01:03  ole
-
-	* src/THaOutput.C: Add benchmarking code for performance
-	  evaluation.  For loops over STL vectors, use iterators, not
-	  indexing (better type safety).  Loop backwards when "Fill"ing
-	  THaOdata objects to minimize the need for resizing them.
-
-2007-04-13 00:53  ole
-
-	* src/THaFormula.C: Return kBig if invalid expression etc., not
-	  zero.  Fix the return code in case no variable list is found so
-	  that evaluation stops.
-
-2007-04-11 14:57  ole
-
-	* Makefile: Version is 1.4.4.
-
-2007-04-11 14:53  ole
-
-	* src/THaDecData.h: Merge string matching fix from trunk (version
-	  1.9).
-
-2007-04-05 15:02  ole
-
-	* Makefile: When "install"ing, also copy THaNormAna source code to
-	  $ANALYZER/src/src.  Let ha_compiledata.h depend on Makefile again
-	  (was accidentally commented out).
-
-2007-04-05 00:15  ole
-
-	* Makefile: Install Makefile and ChangeLog in $(ANALYZER)/src.
-
-2007-04-04 23:33  ole
-
-	* Makefile: Add install target.  Version is 1.4.3
-
-2007-04-04 23:32  ole
-
-	* hana_decode/Makefile, hana_scaler/Makefile: Remove direct copy of
-	  shared lib to $ANALYZER lib dir in install target.  Now handled
-	  by top-level Makefile.
-
-2007-04-04 15:31  ole
-
-	* src/THaDecData.C: Changed hardcoded cuts "cutlo" and "cuthi"
-	  according to undocumented modification on adaq. I guess I'll
-	  never understand why anyone has the nerve to compile
-	  hardware-dependent parameters into production code.  I'll throw
-	  this stuff out in 1.5.
-
-2007-04-04 13:58  ole
-
-	* Makefile, src/NormAna_LinkDef.h, src/THaNormAna.h: Compile
-	  THaNormAna class and make it available as a plug-in library.
-
-2007-04-04 13:01  ole
-
-	* src/: THaNormAna.C, THaNormAna.h: Update to the version from the
-	  online account (from Bob): Add support for helicity
-	  (unfinished?). Drop support for bcm_d10.
-
-2007-04-02 16:15  ole
-
-	* src/THaInterface.C: If $ANALYZER set, use it for setting ROOT's
-	  IncludePath, else fall back to the old logic of using the
-	  compile-time directories.
-
-2007-03-29 00:11  ole
-
-	* src/THaInterface.C: To work around the non-portability of TDatime
-	  and localtime(), fix the timezone to "US/Eastern" for now. This
-	  is good for all JLab production data.  This will be fixed
-	  properly in Release 1.5 by using TTimeStamp or similar.
-
-2007-03-27 14:46  ole
-
-	* src/: THaSecondaryKine.C, THaSecondaryKine.h: As with
-	  THaPrimaryKine, define global variables of vector components via
-	  function calls instead of storing them in redundant member
-	  variables.  Keep those variables around for now for binary
-	  compatibility.
-
-2007-03-26 16:36  ole
-
-	* Makefile, src/HallA_LinkDef.h, src/THaPhotoReaction.C,
-	  src/THaPhotoReaction.h, src/THaSAProtonEP.C, src/THaSAProtonEP.h:
-	  New physics modules from LEDEX: 1) THaPhotoReaction calculates
-	  Egamma for deuteron photodisintegration, gamma(d,p)n 2)
-	  THaSAProtonEP calculates electron kinematics for ELASTIC
-	  p(e,p)e', when the proton is detected instead of the electron.
-
-2007-03-26 16:31  ole
-
-	* src/: THaPrimaryKine.C, THaPrimaryKine.h: * Clear the 4-vectors,
-	  too, when doing Clear().  * No longer fill fQx etc. - these data
-	  can be obtained with a simple   function call on fQ, even when
-	  defining global variables. Keep them around	as member variables
-	  around for now for binary compatibility.
-
-2007-03-26 16:29  ole
-
-	* src/THaAnalysisObject.C: Clear() the object after successful
-	  Init().
-
-2007-03-26 14:07  ole
-
-	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Update to head of
-	  trunk (text = 1.20, header = 1.13)
-
-2007-03-23 16:24  ole
-
-	* Makefile, gcc-version: Remove test for gcc version >= 3. This (as
-	  well as a test for the ROOT version) should be done in a
-	  configure script.  Version is 1.4.3pre.
-
-2007-03-23 16:20  ole
-
-	* src/THaSecondaryKine.C: Remove workaround for TRotation and bump
-	  system requirements to ROOT 3.05/07.
-
-2007-03-23 13:57  ole
-
-	* src/Ext_TRotation.h: Restored.
-
-2007-03-23 13:55  ole
-
-	* src/Ext_TRotation.h: Accidentally removed.
-
-2007-03-23 12:44  ole
-
-	* src/: THaBeamEloss.C, THaTrackEloss.C: Remove redundant check for
-	  initialization of input in Init(). FindModule() already does
-	  this.
-
-2007-03-21 15:19  ole
-
-	* src/: THaRunBase.C, THaRunParameters.C: A more descriptive error
-	  message is printed if run information is missing at
-	  initialization time and the run cannot be fully initialized.
-	  Move initialization of new run parameter onject into
-	  THaRunParameter constructor.
-
-2007-03-21 13:15  ole
-
-	* src/THaElossCorrection.C: Better error messages for missing
-	  material paraemeters in run database.
-
-2007-03-21 13:14  ole
-
-	* src/THaExtTarCor.C: Define global variables via
-	  THaTrackingModule's self-describing interface, as with the other
-	  tracking module clients.
-
-2007-03-21 13:13  ole
-
-	* src/: THaBeamEloss.C, THaTrackEloss.C: Explicitly scope call to
-	  GetRVarDef in DefineVariables to avoid possible future ambiguity.
-
-2007-03-21 13:11  ole
-
-	* src/: THaAvgVertex.C, THaReacPointFoil.C, THaReactionPoint.C,
-	  THaTwoarmVertex.C, THaVertexModule.C, THaVertexModule.h: Make
-	  THaVertexModule self-describe its global variables, in the same
-	  way as THaBeamModule and THaTrackingModule.
-
-2007-03-21 10:58  ole
-
-	* src/THaTrackEloss.C: Init() now ensures that input tracking
-	  module has a good spectrometer, (analogous to THaBeamEloss).
-	  Define global variables using the self-describing interface
-	  rather than explicitly.
-
-2007-03-21 10:50  ole
-
-	* src/THaTrackInfo.h: Bugfix: fSpectro was not copied by copy
+	* src/: THaCodaRun.C, THaCodaRun.h: Add missing THaCodaRun copy
 	  constructor.
 
-2007-03-21 10:50  ole
+2008-04-16 14:10  ole
 
-	* src/: THaTrackingModule.C, THaTrackingModule.h: Add GetRVarDef()
-	  function analogous to THaBeamModule. Allows clients to define
-	  global variables on this class without dependence on its layout.
+	* src/THaAnalysisObject.C: Restore accidentally deleted curly
+	  brackets in destructor.
 
-2007-03-21 10:44  ole
+2008-04-16 13:29  ole
 
-	* src/THaBeamEloss.C: Prevent crash if input beam module not found.
-	  Print error message if the input beam module does not have a
-	  good beam apparatus.
+	* src/: THaRun.C, THaRun.h, THaRunBase.C: Several improvements
+	  related to the perennial problem of split runs:
 
-2007-03-20 17:28  ole
+	  - Get rid of the THaRun comparison operators (==, != etc.). These
+	  treated   runs with different segment numbers as distinct, but
+	  they should be   considered equivalent. Example
 
-	* src/THaBeamEloss.C: Fix another initialization bug: Save pointer
-	  to parent beam apparatus already at initialization time. Without
-	  this, chains of THaBeamEloss modules fail to initialize.
+	     run1: /data/e01002_1000.dat.0
+	     run2: /data/e01002_1000.dat.1
+	     run1 == run2 should be true, run1 < run2 should be false, etc.
 
-2007-03-19 13:49  ole
+	  - Change THaRun::Compare() such that it also compares the segment
+	  number,   so in the above example run1.Compare(run2) == -1 and
+	  run2.Compare(run1) == 1
 
-	* src/THaSecondaryKine.C: Clarify and correct comments regarding
-	  missing energy and mass.
+	  - Clean-up convoluted logic of the various Clear() functions.
+	  Clear() now	always closes the run, but keeps explicitly set run
+	  date, event range,   and number of events to scan if
+	  initializing. In line with this,   change Init() to Clear()
+	  first, then Open(), not vice versa.
 
-2007-02-07 13:01  ole
+	  - Add more intelligence to THaRun::ReadInitInfo(): If trying to
+	  get	the init info (run date etc.) for a continuation segment of
+	  a split run,	 try finding the first segment and reading the
+	  parameters from there.    The first segment is searched for in
+	  the same directory as the    continuation segment. If the run is
+	  a directory containing a string    dataN, with N=1..9, it is also
+	  searched for in all other dataN directories.	  This should cover
+	  the common file locations people use in Hall A.
 
-	* Makefile: Version is 1.4.2
+	  Now, here's three possible ways to handle split runs:
 
-2007-02-07 12:51  ole
+	  1) Old method 1, clumsy, don't use	THaRun* r1 = new
+	  THaRun("/work/data1/e01002_1000.dat.0");    THaRun* r2 = new
+	  THaRun("/work/data2/e01002_1000.dat.1");    r1->Init();
+	  r2->SetDate(r1->GetDate());	  // Satisfies init requirements
+	  r2->SetNumber(r1->GetNumber()); // Makes runs equal for
+	  THaAnalyzer	 analyzer->Process(r1);    analyzer->Process(r2);
 
-	* src/THaBeamEloss.C: Bugfix: don't test beaminfo but rather the
-	  parent beam object for proper initialization. beaminfo->IsOK()
-	  refers to event-by-event data, beam->IsInit() to the module
-	  startup initialization, which is what we want in the Init()
-	  routine here.
+	  2) Old method 2, ok:	  THaRun* r1 = new
+	  THaRun("/work/data1/e01002_1000.dat.0");    r1->Init();
+	  THaRun* r2 = new THaRun(*r1);   // Make exact copy of r1
+	  r2->SetFilename("/work/data2/e01002_1000.dat.1"); //except for
+	  the file name    analyzer->Process(r1);    analyzer->Process(r2);
 
-2007-02-07 12:49  ole
+	  3) New method, preferred (unless the directory names are
+	  unusual):    THaRun* r1 = new
+	  THaRun("/work/data1/e01002_1000.dat.0");    THaRun* r2 = new
+	  THaRun("/work/data2/e01002_1000.dat.1");
+	  analyzer->Process(r1);    analyzer->Process(r2);
 
-	* hana_scaler/haScal_LinkDef.h: Merge in version 1.5 from trunk,
-	  which removes unneeded explicit link requests for STL instances.
+	     i.e. now it "just works". Since the runs are considered equal,
+	  the
+	     output ROOT file will contain the sum of the two runs.
 
-2007-02-07 12:48  ole
+2008-04-14 17:21  ole
 
-	* src/HallA_LinkDef.h: Merge one useful patch from trunk
-	  (1.40->1.41): Remove explicit link requests for STL instances.
-	  These instances will be happily available from CINT/scripts if
-	  ROOT is built properly (make cintdlls).
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Make fgModules
+	  private and add optional 3rd argument to FindModule() that can
+	  disable error printing and checking for Init status. With the 3rd
+	  argument false, FindModule() acts more or less like a no-frills
+	  Find-by-name on a list (it still checks for inheritance from
+	  THaAnalysisObject and, if given, from classname).
 
-2007-02-07 12:41  ole
+2008-04-10 13:11  ole
 
-	* src/THaDecData.C: Clean up from previous fix: remove
-	  unused/uninitialized variables in VdcEff().
+	* src/THaAnalysisObject.C: Pure comment lines no longer terminate a
+	  continued database key. Example
 
-2007-02-05 16:44  feuerbac
+	  D.value = 1 \ #	   2 \		 3
 
-	* src/THaDecData.C: Fixes to the VDCeff calculation:  * initialize
-	  all elements of xcnt, eff, and wire to 0  * separate cnt from
-	  per-plane loop so all planes have their histograms	 filled in
-	  the case that the number of planes factorizes 500.   * changes
-	  calculation method to go as O(N) instead of O(N^3), where	 N
-	  is the number of hits on a plane.
+	  reads value = "1 3".
 
-2006-09-26 15:03  ole
+	  Minor cleanup.
 
-	* Makefile: Version is 1.4.1
+2008-04-10 12:10  ole
 
-2006-09-26 15:02  ole
+	* src/THaOutput.C: Print warning if "block" statement in output
+	  definition file does not match any variables, similar to
+	  "variable" statements that refer to undefined variables.
 
-	* hana_decode/: THaBenchmark.h, THaCodaData.C, THaCodaDecoder.C:
-	  Merge fixes from GEn branch: * hana_decode/THaBenchmark.h
-	  (gen-e02013.1): Increase permitted   number of benchmark items *
-	  hana_decode/THaCodaData.C (gen-e02013.1): Fix the 'delete'
-	  operator in the destructor to 'delete []'. Stops crash (at least
-	  for GEn runs) at the end of an analysis.  *
-	  hana_decode/THaCodaDecoder.C (gen-e02013.3): Fix copy-and-paste
-	  error when checking the prescale factor reading in from the file
-	  compared to the trigger-supervisor.
+2008-04-07 14:46  ole
 
-2006-09-26 14:59  ole
+	* src/: THaBeamInfo.h, THaHelicityDet.h: Fix more "unused
+	  parameter" warnings caused by Clear(opt)
 
-	* src/THaOutput.C: Merge fixes from GEn branch (from Rob
-	  Feuerbach): Two changes to the scaler handling:   1)	Enabled the
-	  "count" option for the default and default_helicity	    sets of
-	  scaler variables. (could only get rate before)   2)  New "scaler"
-	  variable dclock which gives the difference in clock	    count
-	  for this interval, permitting one to go back from "rate" to
-	  "counts" per segment.
+2008-04-07 14:45  ole
 
-2006-09-26 14:53  ole
+	* src/THaHelicity.C: Warn about !fGoodHel2 at debug level 1 and
+	  !fGoodHel2 at level 2.
 
-	* src/THaAnalyzer.C: Better protect InitModules() against insane
-	  input.
+2008-04-07 14:01  ole
 
-2006-09-26 13:26  ole
+	* src/THaG0HelicityReader.C: To allow inverting ADCHelicity and
+	  G0Helicity gates independently in THaHelicity, rename the
+	  database key for inverting the g0 gate signal from "invert_gate"
+	  to "neg_g0_gate".
 
-	* src/: THaCoincTime.C, THaS2CoincTime.C: Fix crash due to
-	  incorrect dereferencing of Vxtime array.
+2008-04-07 13:31  ole
 
-2006-08-18 13:43  feuerbac
+	* src/THaVar.C: Fix warning about "cast of pointer to integer of
+	  different size"
 
-	* src/THaS2CoincTime.C: Fix typo to compare int, not int*.
+2008-04-07 13:20  ole
 
-2006-07-17 15:13  ole
+	* Makefile: Extversion is -beta3
 
-	* Makefile: Restore efficient compilation options.
+2008-04-07 13:19  ole
 
-2006-07-17 15:12  ole
+	* src/: THaG0HelicityReader.C, THaADCHelicity.C, THaADCHelicity.h,
+	  THaG0Helicity.C, THaG0HelicityReader.h: Add configuration option
+	  "invert_gate", read from database, that logically inverts the
+	  polarity of the gate signal.	The definition of the gate polarity
+	  appears to be changing with time... The database key is optional,
+	  and the default is not to invert the gate (previous behavior).
 
-	* hana_scaler/tscalroc23_main.C: Fix undefined variable error in
-	  print statement.
+2008-04-04 17:19  ole
 
-2006-07-17 15:11  ole
+	* DB/DEFAULT/db_hel.dat: Add keys for THaHelicity
 
-	* hana_scaler/: THaScaler.C, THaScaler.h: Correct more STL typing
+2008-04-04 17:18  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaHelicity.C,
+	  src/THaHelicity.h: New class THaHelicity: reads helicity info
+	  from both ADCs and G0 hardware (with delay=0, "in-time" helicity)
+	  and compares results. Sets global variables and, if fDebug>=1,
+	  prints warning if the two results differ.
+
+2008-04-04 17:16  ole
+
+	* src/: THaG0Helicity.C, THaG0Helicity.h, THaG0HelicityReader.C,
+	  THaG0HelicityReader.h: - Add handling of G0 helicity in case of
+	  zero delay (from Vince).  - Move reading of the G0 ROC info to
+	  THaG0HelicityReader::ReadDatabase
+
+2008-04-04 17:13  ole
+
+	* src/THaADCHelicity.C: - Change default threshold to 4000 for
+	  12-bit TDCs.	- Use fSign only for calculating the final
+	  fHelicity, not fADC_Hel,   consistent with G0Helicity.
+
+2008-04-04 15:12  ole
+
+	* src/THaDetMap.C: Create really empty detmap by default, not
+	  "empty" map with space for 10 modules. This saves memory for
+	  detectors that do not use fDetMap.
+
+2008-04-03 15:23  ole
+
+	* src/THaADCHelicity.C: Fix bug in ReadDatabase causing gate always
+	  to be ignored. Fix inefficiency in Decode causing multiple
+	  assignments of helicity.
+
+2008-04-03 14:50  ole
+
+	* src/HallA_LinkDef.h: Link THaScintilltor::DataDest to avoid
+	  "missing dictionary" warnings from recent ROOT versions.
+
+2008-04-03 14:07  ole
+
+	* DB/DEFAULT/db_hel.dat, src/HallA_LinkDef.h, src/THaADCHelicity.C,
+	  src/THaADCHelicity.h: Replace the "detmap" key in THaADCHelicity
+	  with two keys, "helchan" and "gatechan", each requiring 3
+	  integers with the roc/slot/chan of the helicity and gate data
+	  channels, respectively. This is much cleaner. Also, put these
+	  channel definitions in usable form already in ReadDatabase, not
+	  in Decode.
+
+2008-04-03 12:25  ole
+
+	* src/THaADCHelicity.C: - Reverse the expected order of the data
+	  channels. The Hall A setup has the   helicity bit in the first
+	  and the gate in the second data channel.  - Add support for
+	  "reversed" detector maps: e.g.      3 25 15 14 -> roc=3, slot=25,
+	  helicity_chan=15, gate_chan=14  - If ignore_gate is set, allow
+	  only a single data channel, which is taken as   the helicity
+	  channel. In that case, the "gate" is not decoded (it may not
+	  exist) and the global variable for the gate ADC data always holds
+	  kBig.
+
+2008-04-02 16:09  ole
+
+	* src/: THaG0Helicity.C, THaG0HelicityReader.C,
+	  THaG0HelicityReader.h: After conversation with Bob, remove the
+	  sections related to the ring buffer scaler readout. This code
+	  should be in a separate module.
+
+2008-04-02 14:33  ole
+
+	* src/THaG0Helicity.C: Fix typo in ReadDatabase: key s "tdavg",
+	  "ttol", and "missqrt" are all optional.
+
+2008-04-02 14:19  ole
+
+	* Makefile: Version is 1.5.0-beta2
+
+2008-04-02 14:17  ole
+
+	* src/THaADCHelicity.C: Fix typo in ReadDatabase: "detmap" is
+	  required, not optional.
+
+2008-04-02 14:16  ole
+
+	* DB/DEFAULT/db_hel.dat, src/HallA_LinkDef.h, src/THaG0Helicity.C,
+	  src/THaG0Helicity.h, src/THaG0HelicityReader.C,
+	  src/THaG0HelicityReader.h: Port G0 helicity classes to new
+	  database interface. THaG0Helicity should work now. Example
+	  database keys are in DB/DEFAULT/db_hel.dat.
+
+	  Add "ring buffer scaler" code back into THaG0HelicityReader, but
+	  only enable it if G0RINGBUFF is defined at compile time.
+	  Presently turned off by default.
+
+2008-04-02 00:17  ole
+
+	* src/: THaFormula.C, THaFormula.h: Override ROOT's
+	  TFormula::GetExpFormula() because it does not handle
+	  kDefinedVariable and kDefinedString opcodes, which we need for
+	  our global variables.  As of ROOT 5.16, names of existing ("old")
+	  formulas in expressions are substituted not by the old formula's
+	  expression, GetTitle(), but by GetExpFormula(), which makes
+	  sense. However, this will fail to evaluate if the old formula
+	  contains global variable names.
+
+	  I'd call this a bug in ROOT's GetExpFormula() that has been there
+	  ever since ROOT 3.05, but only manifested itself since the change
+	  in ROOT 5.16.
+
+2008-04-01 17:04  ole
+
+	* DB/DEFAULT/db_hel.dat, src/THaADCHelicity.C,
+	  src/THaADCHelicity.h, src/THaHelicityDet.C, src/THaHelicityDet.h:
+	  Updated helicity base class and ADC helicity class to work with
+	  Podd 1.5 database interface. THaADCHelicity should work now.
+
+	  An example database file is in DB/DEFAULT/db_hel.dat.
+
+	  All helicity classes share the same database file, db_hel.dat,
+	  and use their name (not apparatus.name) as the prefix for
+	  database keys and global variables.
+
+2008-03-31 16:06  ole
+
+	* src/THaSubDetector.h: Add default constructor for subdetectors
+	  that need ROOT RTTI.
+
+2008-03-27 16:26  ole
+
+	* src/: THaVform.C, THaVhist.C, THaVhist.h: Bugfix: Fix the nasty
+	  crashes on exit when THaOutput defined histograms using formulas
+	  in expressions for the x or y variable or the cut.  The problem
+	  was a double-delete: passing a dummy argument "[0]" to the
+	  THaFormula c'tor from the THaVform c'tor caused duplicate entries
+	  in ROOT's list of functions if a THaVform with the same name as
+	  an existing one was created. This happened in THaVhist::SetX(),
+	  SetY() and SetCut(). Of these duplicate entries, only the first
+	  one would be deleted upon deleting the formula. On exit, ROOT
+	  tried to delete the remaining ones, which pointed to already
+	  deleted objects.
+
+	  Also, THaVhist::SetX/SetY/SetCut(THaVform*) failed to set
+	  fMyFormX etc. so that these formulas would never get deleted.
+	  This was at least a major memory leak.  These functions also
+	  called operator= to copy the formulas unnecessarily (they were
+	  already copied and compiled during construction).
+
+	  Solutions: a) THaVform c'tor changed to call Compile() only once,
+	  with the right name.	b) THaVhist::SetX/SetY/SetCut(THaVform*)
+	  changed not to make a copy but only	 to store a pointer.
+	  External formulas are indicated with fMyFormX etc.	 Further
+	  changed THAVhist not to Init() or Process() fFormX etc. if
+	  fMyFormX     etc. are false. This should improve memory usage and
+	  speed.     The only requirement is that formulas/cut must be
+	  processed before     histograms in THaOutput.
+
+2008-03-27 14:53  ole
+
+	* src/: THaHRS.C, THaSecondaryKine.h, THaSpectrometer.C,
+	  THaVDCCluster.C: Pick up minor changes from Release-140 branch up
+	  to 1.4.10 (missing #includes etc.)
+
+2008-03-27 11:22  ole
+
+	* src/: THaCut.C, THaFormula.C, THaFormula.h: Pick up changes from
+	  Release-140 branch up to 1.4.10 (support for string types in
+	  formulas and cuts).
+
+2008-03-18 11:10  ole
+
+	* hana_decode/haDecode_LinkDef.h: Link THaEvData::RocDat_t to fix
+	  spurious ROOT RTTI errors
+
+2008-03-12 16:00  ole
+
+	* hana_decode/THaEvData.h: Get rid of trivial "unused parameter"
+	  warnings that appear when optimizing.
+
+2008-03-12 13:47  ole
+
+	* src/THaOutput.C: Bugfix: do not call "StripBrackets" for the
+	  argument of a "block" definition.  Otherwise, regular expressions
+	  with brackets (e.g. [uvx]) are corrupted.
+
+2008-03-11 11:35  ole
+
+	* hana_decode/: THaEvData.C, THaEvData.h: Allow GetEvTime even if
+	  not implemented in a derived class. It will return 0 by default.
+	  Derived classes have the option of overriding GetEvTime() or
+	  simply putting the event time into the member variable evt_time.
+
+2008-03-10 23:51  ole
+
+	* src/THaInterface.C: PrintLogo() fix for ROOT 5.18 broke
+	  compilation for ROOT 5.16 and before.
+
+2008-03-10 23:51  ole
+
+	* src/: THaCoincTime.C, THaHelicityDet.C, THaS2CoincTime.C: Changes
+	  for removed THaDB.h
+
+2008-03-10 23:50  ole
+
+	* Makefile: Make smaller srcdist
+
+2008-03-10 23:42  ole
+
+	* src/: THaInterface.C, THaInterface.h: Merge PrintLogo() fix from
+	  1.4 branch.
+
+2008-03-10 23:15  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaDB.C, src/THaDB.h,
+	  src/THaFileDB.C, src/THaFileDB.h: Remove unused/abandoned THaDB
+	  and THaFileDB.
+
+2008-03-10 21:55  ole
+
+	* hana_decode/THaSlotData.h: Add assertions to most getters to
+	  catch hidden logic errors. For now, these are in addition to the
+	  existing guard tests. Some of the tests depend on the cratemap
+	  data and/or the raw data and so should always be done.
+
+2008-03-10 21:53  ole
+
+	* hana_decode/Makefile: Define NDEBUG if compiling non-debug
+	  version with STANDALONE.
+
+2008-03-10 21:52  ole
+
+	* hana_decode/THaEvData.h: Replacing checks for GoodIndex with
+	  assertions was a bit too agressive.  Add new function
+	  GoodCrateSlot to assert good input, but do allow missing entries
+	  in the crateslot arrays for GetNum... functions.
+
+2008-03-10 16:08  ole
+
+	* src/THaTrackInfo.h: Get rid of "unused parameter" warning from
+	  Clear(opt).
+
+2008-03-10 15:47  ole
+
+	* src/: THaTrackingDetector.C, THaTrackingDetector.h:
+	  FindVertices() does not really belong here. Vertices (target
+	  coordinates) should be found by the spectrometer, not the
+	  tracking detectors.  Keep it for now for backward compatibility,
+	  but change it from a required pure virtual function to a dummy
+	  function.
+
+2008-03-10 15:44  ole
+
+	* src/THaAnalysisObject.h: Clarify comments of fIsInit and fIsSetup
+
+2008-03-08 01:41  ole
+
+	* src/: THaVDCUVPlane.C, THaVDCUVPlane.h: Remove unused member
+	  variable fVUWireAngle. Clarify comments.
+
+2008-03-08 01:39  ole
+
+	* src/: THaVDCPlane.C, THaVDCPlane.h: Comment out unused code for
+	  reading the TTD lookup table. The table just eats memory and
+	  should not be a member variable of this class anyway.
+
+	  Speed up Get functions for cluster, hits, and wire TClonesArrays
+	  by doing range checking with assert() and access with
+	  UncheckedAt().
+
+2008-03-07 23:54  ole
+
+	* src/: THaSubDetector.C, THaSubDetector.h, THaVDCPlane.C,
+	  THaVDCPlane.h, THaVDCUVPlane.C: To maintain backward
+	  compatibility, restore old functionality of
+	  THaSubDetector::GetDetector(). It now does the same as
+	  GetParent().	Rename the new GetDetector() to GetMainDetector().
+	  It searches up a chain of nested subdetectors until it finds the
+	  enclosing THaDetector.
+
+	  Change related code in THaVDCPlane and THaVDCUVPlane accordingly.
+
+2008-03-07 15:30  ole
+
+	* Makefile, hana_decode/THaCodaDecoder.C,
+	  hana_decode/THaCodaDecoder.h, hana_decode/THaCrateMap.C,
+	  hana_decode/THaCrateMap.h, hana_decode/THaEvData.C,
+	  hana_decode/THaEvData.h, src/HallA_LinkDef.h, src/THaAnalyzer.C,
+	  src/THaAnalyzer.h, src/THaEvent.C, src/THaEvent.h,
+	  src/THaRawEvent.C, src/THaRawEvent.h, src/THaTrackingDetector.C,
+	  src/THaVDCEvent.C, src/THaVDCEvent.h, src/THaVar.C, src/THaVar.h:
+	  Version is 1.5.0-beta1
+
+	  Restore most of the helicity-code previously removed from decoder
+	  and THaAnalyzer. We change plans and decide to include the
+	  helicity detectors in the decoder as well (to be done), which is
+	  where they best fit.
+
+	  Provide dummy access routines to scaler and helicity data in
+	  THaEvData base class, but trap access to them in debug mode to
+	  uncover hidden logic errors.	Clients can disable trapping by
+	  setting fgAllowUnimpl (not recommended).
+
+	  Replace most range-checking tests in decoder (THaEvData,
+	  THaCodaDecoder) and THaCrateMap with assert() to trap hidden
+	  logic errors. At the same time, this improves runtime performance
+	  of production code compiled with NDEBUG.
+
+	  Fix wrong loop range over slots in THaCodaDecoder::vme_decode.
+	  Fortunately, no VME modules were defined to use slot 0, those
+	  would not have been decoded.
+
+	  Change type of "tloc" parameters in decoder from UInt_t to
+	  ULong64_t in preparation for 64-bit time stamps.
+
+	  In THaEventHeader, restore fHelicity and add fTargetPol. Change
+	  type of fEvtTime from Double_t to ULong64_t, consistent with
+	  "tloc" used elsewhere.  Provide backwards-compatible Set().
+
+	  Change type of k(U)Long data in THaVar system from (U)Long_t to
+	  (U)Long64_t.	As stated by the ROOT team, (U)Long_t is "currently
+	  not a portable data type" - it's 4 bytes on 32-bit platforms, but
+	  8 on 64-bit.
+
+	  Write ANALYZER_VERSION_CODE and define ANALYZER_VERSION() macro
+	  in ha_compiledata.h, analogous to ROOT_VERSION_CODE. This allows
+	  writing of version-dependent code.
+
+	  Remove obsolete THaRawEvent and THaVDCEvent classes. THaEvent
+	  should be upgraded with an intelligent dynamic streamer method.
+
+	  Warn about missing parent spectrometer in
+	  THaTrackingDetector::AddTrack() only if fDebug>0. It would
+	  probably be even better to warn exactly once.
+
+2008-03-05 14:20  ole
+
+	* src/: THaTrack.C, THaTrack.h: Repair broken Clear(). The previous
+	  change actually caused a memory leak because
+	  TClonesArray::Clear("C") only calls obj->Clear(), not
+	  obj->Clear("C") (which it probably should, but that's ROOT
+	  history). As a result, if tracks were tagged with a THaTrackID,
+	  the ID object was leaked for every track!
+
+	  Changes: - Restore the 1.10/1.14 versions of THaTrack.C/h.  -
+	  Update the constructor initialization lists and Clear() to the
+	  current   set of member variables.  - Initialize all Double_t in
+	  constructors and Clear() to kBig.  - Fix minor bug: fType was
+	  zero but should be kHasFP when constructing	with fp coords.  -
+	  To be safe, also zero fCluster.
+
+2008-02-29 17:00  ole
+
+	* src/: THaVDCUVPlane.C, THaVDCUVPlane.h, THaVDCUVTrack.C:
+	  Pre-calculate inverse of denominator of coordinate conversion
+	  expressions during Init() so that we can replace fp divisions
+	  with fp multiplications.  Might save a few cpu cycles.
+
+2008-02-29 16:47  ole
+
+	* src/THaAnalysisObject.h: Redo - test
+
+2008-02-29 16:46  ole
+
+	* src/THaAnalysisObject.h: Undo prev checkin for test
+
+2008-02-29 16:43  ole
+
+	* src/THaAnalysisObject.h: Remove explicit opt argument to Clear(),
+	  which caused unused parameter compiler warnings.
+
+2007-09-06 22:16  ole
+
+	* src/THaAnalysisObject.C: Make database keys case-sensitive again
+	  (=reverse last check-in).
+
+	  This is the behavior I want for Release 1.5 and up. Release 1.4
+	  folded the case for the part of the key that was given to
+	  LoadDBvalue() - usually just the last part of the key excluding
+	  the prefix. This was confusing - case-sensitivity is what ROOT
+	  users expect because that's how all user strings, object and
+	  class names, identifiers etc. are treated.
+
+	  This change may require minor modifications to some user
+	  databases, but it will be immediately obvious from error messages
+	  which entries require changes.
+
+2007-09-06 21:51  ole
+
+	* src/: THaDetMap.C, THaDetMap.h: Add support for detector maps
+	  with reversed logical channel order (logical channel "first"
+	  corresponds to "hi", "first+nchan-1" to "lo").  This is useful if
+	  ribbon cables are plugged in backwards, detectors are flipped
+	  around physically, etc. Currently needed by BigBite MWDC.
+
+2007-09-06 21:47  ole
+
+	* hana_decode/: THaBenchmark.h, THaEvData.C, haDecode_LinkDef.h:
+	  Generate CINT dictionary for THaBenchmark so it can be used in
+	  scripts, too.
+
+2007-09-05 14:57  ole
+
+	* src/THaAnalysisObject.C: Restore case-insensitivity of search for
+	  database keys. Otherwise, I just know it's going to break
+	  someone's database, somewhere, sometime...
+
+2007-09-05 14:35  ole
+
+	* src/THaRunParameters.C: Search for "ebeam" instead of "Ebeam" in
+	  run database since database keys are now case sensitive and all
+	  our run databases use lowercase "ebeam".
+
+2007-09-05 14:33  ole
+
+	* src/THaAnalysisObject.C: Rename internal function IsDBtag() to
+	  IsDBkey().
+
+2007-08-31 22:57  ole
+
+	* src/THaDetMap.C: Let SetModel() also set the model's properties
+	  (ADC, TDC, etc.)
+
+2007-08-31 16:09  ole
+
+	* src/: THaDetMap.C, THaDetMap.h: - Add refchan field to module
+	  structure, which is useful for actually defining   maps for
+	  pipeline TDCs.  - Add Find() method.	- Change kModelMask to
+	  reserve only 8 bits, not 16, for module properties.  - Add range
+	  checking to get and test methods.
+
+2007-08-31 16:02  ole
+
+	* src/THaDetectorBase.h: Add GetDetMap() function. This is useful
+	  for detectors that need to know the maps of subdetectors, for
+	  example.
+
+2007-08-31 16:00  ole
+
+	* src/THaAnalysisObject.C: When calling the object's Clear() from
+	  Init(), pass option "I". This allows more intelligent behavior in
+	  complex Clear() functions.
+
+2007-08-30 01:50  ole
+
+	* src/: THaDetMap.C, THaDetMap.h: Add more utility functions to
+	  struct Module. Remove hardcoded TDC resolutions from internal
+	  module list.
+
+2007-08-29 17:26  ole
+
+	* src/: THaDetectorBase.C, THaDetectorBase.h: Make argument of
+	  FillDetMap a vector<Int_t> not vector<int> to avoid portability
 	  issues.
 
-2006-07-17 14:40  ole
+2007-08-29 17:25  ole
 
-	* hana_decode/THaCodaDecoder.C: Fix compilation warning about
-	  uninitialized variable 'chan'.
+	* src/VarType.h: Add support for matrix types: kFloatM, kDoubleM,
+	  kIntM.
 
-2006-07-17 14:32  ole
+2007-08-29 17:23  ole
 
-	* docs/RELEASE_NOTES.html: Updated for Release 1.4.
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Add
+	  LoadDBmatrix() template function - yet another database utility
+	  function.  Support reading of matrixes of float, double, and
+	  Int_t in LoadDB().
 
-2006-07-17 14:05  ole
+2007-08-29 17:21  ole
 
-	* src/THaRun.C: Fix compilation for ROOT 4 and earlier. No
-	  TString::Atoi() in older ROOT.
+	* src/: THaDetMap.C, THaDetMap.h: Add Sort(). Add member functions
+	  (getters, testers) to Module structure.
 
-2006-07-17 13:41  ole
+2007-08-27 17:18  ole
 
-	* src/: THaCoincTime.C, THaS2CoincTime.C: Fix compilation failure
-	  on Solaris.
+	* src/: THaDetMap.C, THaDetMap.h: - Add GetMinMaxChan() method to
+	  find range of channels (or refindexes)   used by the map.  - Add
+	  resolution field to Module. This can be used for TDC resolutions,
+	  in   particular, but also for another floating point parameter
+	  associated with a   module.  - Fill() now always auto-computes
+	  the logical channel number unless explicitly	 overridden with
+	  kFillLogicalChannel. It can only help to enumerate the   channels
+	  at fill time. Clients can always override with their own scheme
+	  after filling.
 
-	  Using references in structures is non-standard C++. Please avoid
-	  GNU extensions and the like. We'd like to write portable code.
+2007-08-25 14:31  feuerbac
 
-2006-07-17 13:38  ole
+	* src/: THaG0Helicity.C, THaG0Helicity.h, THaG0HelicityReader.C:
+	  Couple of updates that might make this work (still needs real
+	  testing).
 
-	* hana_scaler/: THaScalerDB.C, THaScalerDB.h: Fix name clashes with
-	  member variables (again).
+	  Major improvement was modifying QuadCalib and QuadHelicity to
+	  update the time of the quad early, and test the quad's time (not
+	  this event's) against the previous quad in QuadHelicity; this
+	  fixes the case where only the last piece of the previous quad was
+	  found (due to deadtime) so the code thought it was working off
+	  the same QRT.  This appears to be the primary problem with the
+	  saGDH dataset.
 
-	  Please use the ROOT naming conventions for member data, static
-	  members, functions, etc. It helps a LOT. Really.
+	  Other items:	* fix typo in THaG0HelicityReader::SetROCinfo so
+	  index, header set right  * Maximum permitted number of QRT
+	  (fMaxMissed) is now a set-able parameter    with a default value
+	  of 30 (what was hard-coded before = ~ 4seconds);    therefore
+	  bumped THaG0Helicity's version to 2 to ac  * Protected missing
+	  QRT recovery logic -- only attempt if the helicity	prediction
+	  algorithm is fully calibrated  * some additional clarifying
+	  comments and exchange of hard-coded values	with appropriate
+	  relation to parameters (esp. in TimingEvent)
 
-2006-07-17 13:34  ole
+2007-08-24 15:06  ole
 
-	* hana_scaler/: THaScaler.C, THaScaler.h: Fix name clashes with
-	  member variables (if ONLY all member variables were named
-	  according to the ROOT programming guidelines, I wouldn't have to
-	  fix this mess every time).
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h, VarType.h:
+	  Support vector<float> as a type (kFloatV) for LoadDB. Templatize
+	  LoadDBarray.
 
-	  Proper argument for map::insert is map::value_type. Sorry, but it
-	  is. Really.
+2007-08-23 16:45  ole
 
-2006-07-17 11:43  ole
+	* src/: THaDetector.h, THaSubDetector.C, THaSubDetector.h,
+	  THaVDCPlane.C: Better handling of detector/subdetector
+	  hierarchies: In THaSubDetector, rename fDetector to fParent. New
+	  method GetParent() returns the subdetector's immediate parent
+	  (which may be another subdetector), while GetDetector() now finds
+	  the subdetector's parent detector by walking up the subdetector
+	  chain.
 
-	* src/THaRun.C: Pick up operator!= fix from trunk.
+2007-08-23 15:28  ole
 
-2006-07-17 11:42  ole
+	* src/: THaVDC.C, THaVDC.h, THaVDCPlane.C, THaVDCPlane.h,
+	  THaVDCUVPlane.C, THaVDCUVPlane.h: - Remove calls to Clear() from
+	  Decode() since Clear() is called right   before Decode() in
+	  THaAnalyzer already. The logic is that the analysis	routines
+	  can assume that they are called in the required order.  -
+	  Implement missing THaVDC::Clear(), which in turn clears the
+	  subdetectors.
 
-	* hana_scaler/THaScaler.C: Fix compilation warning and clean up
-	  GetScalerRate().
+2007-08-23 12:44  ole
 
-2006-07-17 11:42  ole
+	* src/: THaSubDetector.C, THaVDCPlane.C: Use TString::Chop() to
+	  remove trailing dot prefix strings.
 
-	* Makefile, hana_scaler/THaScalerDB.h: Pick up gcc4 fixes from
-	  trunk.
+2007-08-23 00:44  ole
 
-2006-07-12 17:10  ole
+	* src/THaAnalysisObject.C: Fix incorrect printout of database file
+	  name in case of error.
 
-	* Makefile: Version is 1.4.0.  DEBUG off.
+2007-08-22 00:57  ole
+
+	* src/: THaDetMap.C, THaDetMap.h, THaDetectorBase.C,
+	  THaDetectorBase.h: Oops. Pass vector<int> argument to
+	  Fill/FillDetMap by reference, not by value.
+
+2007-07-13 14:50  ole
+
+	* src/: THaDecData.C, THaDecData.h: - Make BdataLoc a local class
+	  and header_str_to_base16() a local function.	- Move vsplit()
+	  member function to THaAnalysisObject.  - Improve speed of
+	  Decode() somehwat by avoiding looping over the RocLength
+	  instead of the entire event length for the fWordLoc variables.
+	  This can   probably be further optimized still.
+
+2007-07-13 14:41  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h,
+	  THaDetectorBase.C, THaVar.C, VarDef.h, VarType.h: Add support for
+	  searching upwards a database key hierarchy in
+	  THaAnalysisObject::LoadDB(). Searching can be requested on a
+	  per-item basis or globally. See comments in LoadDB() for details.
+
+	  Also, move vsplit() from ThaDecData to THaAnalysisObject.
+	  vsplit() duplicates the Split() function of THaString. THaString
+	  should probably be removed.
+
+2007-06-27 16:17  ole
+
+	* Makefile: Don't compile THaFileDB for now.
+
+2007-06-27 16:17  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Improvements to
+	  database functions: - Support DBRequest structure for LoadDB() -
+	  Support in-line comments ("#") after key/value data.	- Grow line
+	  buffer dynamically in LoadDBvalue() (up to 16 kB). Long lines
+	  may occur now that arrays and strings are supported.	-
+	  ReadRunDatabase() now returns proper error codes.  - Better error
+	  messages and handling in LoadDB().
+
+2007-06-27 14:29  ole
+
+	* src/: THaCoincTime.C, THaCoincTime.h, THaG0Helicity.C,
+	  THaScintillator.C: Use new structure DBRequest in ReadDatabase().
+	  Avoid database access through gHaDB for now. Use standard
+	  file-based database consistent with other detectors.
+
+2007-06-27 14:26  ole
+
+	* src/: THaDetectorBase.C, THaDetectorBase.h: Add ReadGeometry
+	  database utility function.
+
+2007-06-27 14:25  ole
+
+	* src/HallA_LinkDef.h: Remove explicit linking of some common STL
+	  templates once and for all.  Previous problems were due solely to
+	  improper installations of ROOT (my fault).
+
+2007-06-27 14:20  ole
+
+	* src/: THaVar.C, THaVar.h, VarDef.h, VarType.h: In VarDef.h, make
+	  DBRequest a different structure than TagDef (to be obsoleted).
+	  Sightly reorder enums in VarType.h
+
+2007-06-21 16:59  ole
+
+	* src/: THaDetectorBase.C, THaDetectorBase.h: Add FillDetMap()
+	  method to simplify detector map handling in database readers.
+
+2007-06-21 16:56  ole
+
+	* src/: THaDetMap.C, THaDetMap.h: - Add Fill() method to initialize
+	  the detector map from a vector<int> (typically read from the
+	  database).  - Add Reset() method to be able to free the memory
+	  allocated by this class.  - Add convenience methods GetModel(),
+	  IsADC(), IsTDC() that use index of module as argument.  - Add
+	  GetNchan() and GetTotNumChan() convenience methods, useful for
+	  checking against #wires/blocks/mirrors etc.  - Fix bug in copy
+	  constructor (fMaplength was not copied).  - Fix incorrect
+	  definition of kModelMask which caused GetModel() to fail.
+
+2007-06-19 15:35  ole
+
+	* src/THaAnalysisObject.C: Prevent crash when printing error
+	  message in LoadDB if input is insane.
+
+2007-06-19 15:26  ole
+
+	* src/THaAnalysisObject.C: Add support for reading of
+	  vector<double> and vector<int> to LoadDB().  Print data type name
+	  if unsupported type requested in LoadDB().  Define global Here()
+	  function and make in-class Here() a special case of it.
+
+2007-06-19 15:24  ole
+
+	* src/THaAnalysisObject.h: Declare a global Here() function for
+	  convenience. (Might be better put in a different header - TBD.)
+
+2007-06-19 15:22  ole
+
+	* src/THaVar.C: Define names of data types (var_type_name[]),
+	  declared in VarType.h.
+
+2007-06-19 15:21  ole
+
+	* src/VarType.h: Add kDoubleV and kIntV (vector<double> and
+	  vector<int>).
+
+2007-06-19 15:20  ole
+
+	* src/HallA_LinkDef.h: Restore explicit linking of some compiled
+	  vector<> templates.  These still don't always work from CINT
+	  (vector<int> and vector<double> tend to be especially
+	  problematic).
+
+2007-06-18 17:31  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Database
+	  functions now support continuation lines and reading of arrays.
+
+2007-06-18 17:29  ole
+
+	* src/THaElossCorrection.C: Minor change to ReadRunDatabase to read
+	  integer parameter directly.
+
+2007-06-15 16:09  ole
+
+	* src/VarType.h: Add string data type (kString).
+
+2007-06-15 16:07  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Support integer
+	  and string data types in LoadDB.
+
+2007-06-12 17:04  ole
+
+	* src/THaVDCPlane.C: Simplify initialization of fglTrg, using the
+	  new THaSubDetector::GetApparatus() function.
+
+2007-06-12 16:58  ole
+
+	* src/: THaSubDetector.C, THaSubDetector.h: Add GetApparatus()
+	  function.
+
+2007-06-12 16:55  ole
+
+	* src/THaDetectorBase.h: Add getters for components of fSize
+	  (returning full sizes in each dimension).
+
+2007-05-11 11:28  feuerbac
+
+	* src/: THaBeamInfo.C, THaDecData.C, THaG0Helicity.C, THaHRS.C,
+	  THaRasteredBeam.C, THaSpectrometer.C, THaSpectrometerDetector.C,
+	  THaUnRasteredBeam.C, THaVDCCluster.C, THaVarList.C: Add in
+	  missing #include's for TList, TMath, and TClass probably needed
+	  now in part to changes/cleaning of the ROOT header files.
+
+2007-05-08 13:25  ole
+
+	* src/THaAnalysisObject.C: Prevent crash if a database entry has
+	  the form "key = ", i.e. no text follows the '=' sign.
+
+2007-05-03 16:50  rom
+
+	* hana_decode/THaUsrstrutils.C: rewrite string_from_evbuffer to
+	  make the algorithm identical to the usrstrutils.c code used by
+	  the trigger supervisor.  I tested it on recent files that had
+	  failed with the old string_from_evbuffer, it works if there are
+	  blank lines or if the last line doesnt end in EOL, etc, just as
+	  the trigger supervisor (VME) code works.
+
+2007-04-27 17:01  ole
+
+	* hana_decode/THaUsrstrutils.C: Fix mixup of units of the buffer
+	  length in string_from_evbuffer: it is in longwords, not bytes.
+	  Only copy event buffer data through terminating NULL, not all the
+	  way up to the buffer length.
+
+2007-04-27 16:58  ole
+
+	* hana_decode/THaCodaDecoder.C: In prescale_decode, avoid
+	  unnecessary copying of the event buffer into a temporary buffer.
+	  Pass the buffer length to the string parser routine.
+
+2007-04-27 16:55  ole
+
+	* src/THaTrack.C: The previous change to call Clear("P") from the
+	  non-default constructor unfortunately deallocated fID.  Change
+	  Clear() to delete fID only if called with "C" option, i.e. when
+	  clearing the TClonesArray of tracks.
+
+2007-04-27 16:54  ole
+
+	* src/THaInterface.C: Do not create a gHaDB object by default for
+	  the moment to get things working.
+
+2007-04-24 16:24  ole
+
+	* hana_decode/THaBenchmark.h: Merge improved Print() function from
+	  GEn branch. Print() without argument prints all defined
+	  benchmarks.
+
+2007-04-24 16:20  ole
+
+	* Makefile, gcc-version, DB/20030101/db_run.dat,
+	  docs/RELEASE_NOTES.html, hana_decode/Makefile,
+	  hana_decode/THaBenchmark.h, hana_decode/THaCodaData.C,
+	  hana_decode/THaCodaDecoder.C, hana_scaler/Makefile,
+	  hana_scaler/THaScaler.C, hana_scaler/THaScaler.h,
+	  hana_scaler/THaScalerDB.C, hana_scaler/THaScalerDB.h,
+	  hana_scaler/tscalroc23_main.C, src/HallA_LinkDef.h,
+	  src/NormAna_LinkDef.h, src/THaAnalysisObject.C,
+	  src/THaAnalyzer.C, src/THaAnalyzer.h, src/THaAvgVertex.C,
+	  src/THaBeamEloss.C, src/THaCoincTime.C, src/THaDecData.C,
+	  src/THaDecData.h, src/THaElossCorrection.C, src/THaExtTarCor.C,
+	  src/THaFormula.C, src/THaHelicity.C, src/THaHelicity.h,
+	  src/THaInterface.C, src/THaNormAna.C, src/THaNormAna.h,
+	  src/THaOutput.C, src/THaOutput.h, src/THaPhotoReaction.C,
+	  src/THaPhotoReaction.h, src/THaPrimaryKine.C,
+	  src/THaPrimaryKine.h, src/THaReacPointFoil.C,
+	  src/THaReactionPoint.C, src/THaRun.C, src/THaRunBase.C,
+	  src/THaRunParameters.C, src/THaSAProtonEP.C, src/THaSAProtonEP.h,
+	  src/THaSecondaryKine.C, src/THaSecondaryKine.h,
+	  src/THaTrackEloss.C, src/THaTrackInfo.h, src/THaTrackingModule.C,
+	  src/THaTrackingModule.h, src/THaTwoarmVertex.C, src/THaVar.h,
+	  src/THaVertexModule.C, src/THaVertexModule.h, src/THaVform.C,
+	  src/THaVform.h, src/THaVhist.C, src/THaVhist.h: Merge changes
+	  from Release-140 branch up to and including version 1.4.6.  NB:
+	  Helicity currently unavailable (work in progress).
+
+2007-04-24 15:20  ole
+
+	* src/HallA_LinkDef.h: Add new helicity classes THaHelicityDet,
+	  THaADCHelicity, THaG0Helicity, and THaG0HelicityReader.
+
+2007-04-13 11:36  rom
+
+	* hana_scaler/: THaScaler.C, THaScaler.h, tscalhist_main.C:
+	  Modified LoadDataHistoryFile so that it can process hexidecimal
+	  or decimal data.  Recent data was recorded in hex for some odd
+	  reason.  The choice is overloaded (default is decimal)
+
+2007-04-04 12:57  ole
+
+	* src/: THaTrack.C, THaTrack.h: Make sure all track quantities are
+	  set to kBig (or 0 for integers) when constructing or Clear()ing a
+	  track. The overhead for doing so is small, the benefit is less
+	  chance of errors when people look at partially reconstructed
+	  tracks.  Also, make fNDoF integer.  The track class looks overly
+	  complicated and should probably be cleaned up.
+
+2007-03-23 16:27  ole
+
+	* src/Ext_TRotation.h: Remove obsolete workaround code for
+	  TRotation.
+
+2007-03-23 16:27  ole
+
+	* src/THaSecondaryKine.C: Merge changes from Release-140 up to
+	  1.8.4.2.  (Updated comments and remove Ext_TRotation.h include.)
+
+2007-03-22 11:33  feuerbac
+
+	* src/: THaCoincidenceTime.h, THaCoincidenceTime.C: Finally removed
+	  THaCoincidenceTime, which was super-ceded by the simpler and
+	  cleaner THaCoincTime class and its descendent (THaS2CoincTime)
+	  back in March of 2004.  This will hopefully descrease the amount
+	  of confusion about properly calculating the coincidence time.
+
+2007-03-21 10:04  ole
+
+	* src/THaBeamModule.h: Enable ROOT I/O for THaBeamModule.
+
+2007-02-08 12:17  feuerbac
+
+	* src/: THaS2CoincTime.C, THaS2CoincTime.h: Three items -- NOT
+	  binary compatible with the Release-140 branch:  * Added the
+	  ability to specify different detector names for the two
+	  spectrometers -- the default is to have the planes of the same
+	  name used    on both arms.   * Improve the in-line documentation
+	  for the constructor and function     of the class.   * Merge the
+	  patches on the Release-140 branch
+
+2006-09-26 13:38  ole
+
+	* src/: THaAnalysisObject.C, THaAnalysisObject.h: Fix compilation
+	  error due to missing include of VarDef.h.
+
+2006-09-25 15:52  ole
+
+	* src/THaFileDB.C: Print error and return count of zero if input of
+	  database values failed.  Modify DbString operator>> to place
+	  stream in error state if no string read.
+
+2006-09-23 00:47  ole
+
+	* src/THaFileDB.C: GetMatrix() for matrices with named rows now
+	  works (although CINT doesn't like calling it).  Fix incorrect
+	  behavior of find_constant(), esp. the linebreak mode.
+
+2006-09-23 00:41  ole
+
+	* src/: THaDB.h, THaFileDB.h, VarDef.h: Rename TagDef to DBRequest.
+
+2006-09-18 14:59  ole
+
+	* src/THaFileDB.C: When reading an array, clear the array when the
+	  key is found so we don't append the new data.
+
+	  Reserve sufficient space in temporary vectors when getting
+	  C-style arrays.
+
+	  Clear a matrix only if the requested key is actually found.
+
+2006-09-18 14:30  ole
+
+	* src/: THaFileDB.C, THaFileDB.h: Make "system" and "attr"
+	  parameters of FindEntry() const char*.
+
+2006-09-15 17:39  ole
+
+	* src/: THaDB.h, THaFileDB.C, THaFileDB.h, VarDef.h: Consolidate
+	  Read/WriteArray functions in THaFileDB.  Change type of "number
+	  of element" counter variables to UInt_t for consistency with STL
+	  size_types.
+
+2006-09-14 16:12  ole
+
+	* src/THaFileDB.C: Warn user if invalid time stamps found, i.e. a
+	  line that looks like a time stamp but fails to convert to a valid
+	  time.  Such lines are ignored as if they were comments, which
+	  isn't necessarily what is intended, and so loud and clear
+	  warnings are good.
+
+2006-09-14 15:56  ole
+
+	* src/THaFileDB.C: In IsDate(), replace sscanf with a string stream
+	  and add better protection against invalid dates.
+
+2006-09-14 14:06  ole
+
+	* src/THaFileDB.C: Print warning if time stamps in a file are found
+	  to be out of order.  Also, make SeekDate() work correctly
+	  (hopefully).
+
+2006-09-12 14:32  ole
+
+	* src/THaFileDB.C: Also treat as comments lines that start with
+	  whitespace followed by a '#'.
+
+2006-09-12 14:30  ole
+
+	* src/THaFileDB.h: Make all actually static functions properly so.
+
+2006-09-12 13:17  ole
+
+	* src/: THaFileDB.C, THaFileDB.h: New function SeekDate(), a
+	  wrapper to FindEntry(), replaces calls like
+	  FindEntry(string("JUNK"),string("JUNK"),stream,date)
+
+2006-09-11 15:28  ole
+
+	* src/: THaFileDB.C, THaFileDB.h: - Change the behavior of
+	  FindEntry() to match that of	 THaAnalysisObject::LoadDBvalue,
+	  i.e. time-stamps are not   required to be in ascending order
+	  (though that is preferred),	and data may be stored
+	  incrementally, i.e. only changes need to be	recorded with new
+	  time-stamps. This makes for a much more human-readable   file
+	  format.  - Change the format of entries to be consistent with the
+	  old	file-based system, i.e."key = value". This allows for old
+	  run databases   to be reused directly.  - Fix apparently broken
+	  DbString::operator>> which did not drop the	initial tab but
+	  kept appending it.  - Do not try to reload database files that
+	  could not be loaded on a   prior request.  - In all Read
+	  functions, skip processing immediately for database files   that
+	  were not loaded instead of trying to parse an empty string.
+
+2006-09-11 15:08  ole
+
+	* src/THaDB.h: Specialized functions GetMatrix/PutMatrix (for
+	  reading/writing a matrix with named rows) get an extra argument,
+	  the matrix name.  In this way, these functions access database
+	  content in the same way as all other functions, namely through a
+	  key consisting of system name, attribute name, and date.
+
+2006-09-01 19:16  ole
+
+	* src/HallA_LinkDef.h: Make gHaDB available from the command line.
+
+2006-09-01 19:14  ole
+
+	* src/: THaFileDB.C, THaFileDB.h: Extend to support input from
+	  several database files, not just one large catch-all file.
+	  Entries may now be located in individual files under $DB_DIR (in
+	  the same way as with the old system implemented in
+	  THaAnalysisObject).  Also, read a separate run database file
+	  (run.db) if it exists.  The search algorithm is implemented in
+	  LoadFile(), which is taken from THaAnalysisObject::GetDBFileList
+	  and THaAnalysisObject::OpenFile.  The supported file format
+	  currently differs from the one used by the THaAnalysisObject
+	  functions.
+
+2006-09-01 18:48  ole
+
+	* src/THaInterface.C: Assign a THaFileDB to gHaDB by default.
+
+2006-08-30 11:37  rom
+
+	* hana_scaler/tscalhist_main.C: add ntuple.  (analysis of end-run
+	  history)
+
+2006-08-30 11:35  rom
+
+	* hana_scaler/tscalfbk_main.C: read parameter file (if exists) to
+	  over-ride defaults; small improvements in filtering data
+
+2006-08-28 16:15  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaFileDB.C, src/THaFileDB.h,
+	  src/THaInterface.C: Rename THaDBFile to THaFileDB.  The old name
+	  suggests that the class represents a (single) database file,
+	  while it actually represents the interface to a file-based
+	  database.
+
+2006-08-28 16:10  ole
+
+	* src/: THaDBFile.C, THaDBFile.h: Rename THaDBFile to THaFileDB.
+	  The old name suggests that the class represents a (single)
+	  database file, while it actually represents the interface to a
+	  file-based database.
+
+2006-08-25 18:39  feuerbac
+
+	* src/THaDecData.h: Maybe it was intentional, but the
+	  BdataLoc::ThisIs method had been using just a sub-string
+	  comparison to match to the variable names. This led to problems
+	  if there was a 'bit6', a 'Lbit6', a 'Rbit6', etc. since they
+	  would all match up. This also might be what caused odd-behavior a
+	  year or so ago when attempts were made to look at channels named
+	  like 'Rs1' vs. 'Rs1b', etc.
+
+	  Changed the comparison in ThisIs to use the string operator==.
+
+2006-08-25 18:07  ole
+
+	* Makefile, src/HallA_LinkDef.h, src/THaADCHelicity.C,
+	  src/THaADCHelicity.h, src/THaG0Helicity.C, src/THaG0Helicity.h,
+	  src/THaG0HelicityReader.C, src/THaG0HelicityReader.h,
+	  src/THaHelicityDet.C, src/THaHelicityDet.h: Re-organized code.
+	  Beam helicity is now a detector with the abstract interface
+	  implemented by THaHelicityDet, which in turn should be part of a
+	  beam apparatus.  There is one helicity detector per HRS arm
+	  instead of the old single class handling both arms - of which one
+	  was sometimes (or often) not present.  Specific implementations
+	  include:
+
+	  THaADCHelicity - in-time mode, using ADCs - for analyzing old
+	  data.  THaG0Helicity	- delayed mode, using G0 helicity
+	  electronics and predictor THaHelicity    - in-time mode, using
+	  ADCs and G0 helicity electronics		    with delay=0
+	  (not finished yet).
+
+	  There is also a helper class, THaG0HelicityReader, which
+	  implemets the code needed to read out the G0 helicity
+	  electronics.
+
+	  This is a preliminary untested version (preview), which is not
+	  yet compiled by default. Stay tuned...
+
+2006-08-25 17:59  ole
+
+	* src/: THaDBFile.C, THaDBFile.h, THaFileDB.C, THaFileDB.h: Add
+	  detailed class description/documentation at beginning of
+	  implementation file.	Remove unneeded includes and pass TDatime
+	  objects by reference everywhere.
+
+2006-08-25 17:58  ole
+
+	* src/: THaDB.C, THaDB.h, THaGlobals.h, THaInterface.C: Move gHaDB
+	  to THaGlobals.h and initialize it in THaInterface.  Remove
+	  unneeded includes from THaDB.h.
+
+2006-08-15 13:00  ole
+
+	* src/THaRunParameters.C: Increase verbosity of call to OPEN of run
+	  database. User is now informed of successful and unsuccessful
+	  attempts at opening db_run.dat.
+
+2006-08-15 12:58  ole
+
+	* src/THaAnalysisObject.C: Let Init() report that database file
+	  error occurred in Init(), not OpenFile().
+
+2006-08-11 14:00  ole
+
+	* src/: THaHelicity.C, THaHelicityDet.C, THaHelicityDet.h,
+	  THaHelicity.h: Make THaHelicity an implementation (not a member)
+	  of THaHelicityDet.  One now needs to add instances of
+	  THaHelicity, not THaHelicityDet, to a beam apparatus.
+
+2006-08-07 14:52  ole
+
+	* src/HallA_LinkDef.h, hana_scaler/haScal_LinkDef.h: Remove
+	  explicit link statements for STL instances.that became
+	  unavailable in CINT once they were used in any of our class
+	  header files.
+
+	  It turns out that our versions of ROOT did not include the CINT
+	  extension modules, which must be built separately with "make
+	  cintdlls; make install".  (The ROOT build documentation contains
+	  exactly one cryptic line on this, viz. in README/BUILDSYSTEM.)
+	  Once these libraries are available, virtually all of STL can be
+	  used under CINT without further ado.
+
+2006-08-07 13:12  ole
+
+	* SDK/UserScintillator.cxx: Replace fApparatus with calls to
+	  GetApparatus() for compatibility with official version 1.4.
+
+2006-08-02 21:21  ole
+
+	* src/: THaHelicityDet.C, THaHelicityDet.h: Add new class
+	  THaHelicityDet - essentially the version from GEn branch.
+
+2006-08-02 21:16  ole
+
+	* Makefile, hana_decode/Makefile, hana_decode/THaHelicity.C,
+	  hana_decode/THaHelicity.h, hana_decode/haDecode_LinkDef.h,
+	  src/THaHelicity.C, src/THaHelicity.h, src/HallA_LinkDef.h: Move
+	  THaHelicity from hana_decode into src and replace with Bob's
+	  latest version from adaq cluster.  Include the new THaHelicityDet
+	  class.  TODO: The way I see it, THaHelicityDet should be an ABC,
+	  and THaHelicity an instance of it.
+
+2006-07-30 10:26  ole
+
+	* src/THaAnalyzer.C, src/THaAnalyzer.h,
+	  hana_decode/THaCodaDecoder.C, hana_decode/THaCodaDecoder.h,
+	  hana_decode/THaEvData.C, hana_decode/THaEvData.h, src/THaEvent.h,
+	  src/THaRun.C: Remove helicity-related code from decoder. Helicity
+	  will be handled by a detector class (to be checked in shortly).
+
+2006-07-27 13:14  ole
+
+	* src/THaAnalysisObject.C: FWIW, make GetDBFileList
+	  system-independent by using ROOT's TSystem API instead of direct
+	  Unix system calls.
+
+2006-07-14 11:05  feuerbac
+
+	* hana_scaler/THaScalerDB.h: Remove extra qualifiers in declaration
+	  sections -- they confuse gcc4.
+
+2006-07-13 12:16  feuerbac
+
+	* src/THaRun.C: Have != work consistently with the == operator. The
+	  previous != definition did not handle split-files correctly, and
+	  so the definition was simplified to just the NOT of ==.
+
+2006-07-13 11:05  feuerbac
+
+	* Makefile: gcc4 also sets HAS_SSTREAM.
+
+2006-07-12 17:19  ole
+
+	* Makefile: Version is 1.5.0-cvs
 
 2006-07-11 14:29  ole
 
@@ -639,6 +1925,14 @@
 	* src/THaVDCCluster.h: Fix bug introduced in prior revision:
 	  restore default argument of constructor so that we have a working
 	  default constructor, THaVDCCLuster().
+
+2006-07-06 16:42  ole
+
+	* VDCsim/: Makefile, Makefile.vdcsimgen, THaVDCSim.cxx,
+	  THaVDCSim.h, THaVDCSimDecoder.cxx, THaVDCSimDecoder.h,
+	  THaVDCSimLinkDef.h, THaVDCSimRun.cxx, THaVDCSimRun.h,
+	  VDCsim_LinkDef.h, vdcsimgen.cxx, vdcsimgen_LinkDef.h: Merge VDC
+	  simulation package from Summer04 branch.
 
 2006-07-06 16:16  ole
 
@@ -1193,6 +2487,12 @@
 	  http://hallaweb.jlab.org/equipment/daq/THaScaler.html which
 	  documents the usage and the changes
 
+2005-01-26 15:02  rom
+
+	* hana_scaler/: THaNormScaler.C, THaNormScaler.h, THaScalerBank.C,
+	  THaScalerBank.h: Remove obsolete classes.  This makes the
+	  THaScaler package much simpler
+
 2004-12-28 19:28  rom
 
 	* hana_decode/: THaGenDetTest.C, THaGenDetTest.h: Test code that
@@ -1408,6 +2708,12 @@
 
 	* hana_scaler/scaler.map: updated scaler.map (contains DVCS
 	  scalers)
+
+2004-09-17 13:31  rom
+
+	* hana_scaler/THaNormScaler.C: Fixed an obvious bug in
+	  THaNormScaler, which was only evident when the 1st channel was
+	  not defined in map file (normally it was)
 
 2004-09-17 13:30  rom
 
@@ -1634,7 +2940,8 @@
 
 2004-06-09 12:07  ole
 
-	* Makefile, src/HallA_LinkDef.h: Remove unused class THaMatrix.
+	* Makefile, src/HallA_LinkDef.h, src/THaMatrix.C, src/THaMatrix.h:
+	  Remove unused class THaMatrix.
 
 2004-06-03 10:57  ole
 
@@ -1656,6 +2963,30 @@
 
 	* contrib/: ParityData.cxx, ParityData.h: putting ParityData into
 	  new directory /contrib
+
+2004-05-25 12:00  rom
+
+	* src/: ParityData.cxx, ParityData.h: removing ParityData from /src
+
+2004-05-24 10:27  rom
+
+	* src/: ParityData.cxx, ParityData.h: put ParityData into /src
+	  directory.  But maybe we want a repository for software that is
+	  not part of the core ?  Anyway, it is here for now
+
+2004-05-24 10:25  rom
+
+	* ParityData.cxx, ParityData.h: remove ParityData from main
+	  directory (it was a mistake to put it there
+
+2004-05-21 16:38  rom
+
+	* ParityData.cxx, ParityData.h: Parity Data (i.e. HAPPEX electron
+	  detector, UMass sQsq scanner, new cavity XYQ monitors,
+	  kinematics, striplines, alignments).	Ok, the kinematics and the
+	  stripline BPMs are redundant with other classes elsewhere in the
+	  analyzer, but the results agreed.  Compile this with an SDK
+	  Makefile to make a shared object library (ask Bob how)
 
 2004-05-14 19:29  rom
 
@@ -2049,10 +3380,11 @@
 
 2004-04-22 15:44  ole
 
-	* src/Ext_TRotation.h: Rename TRotation_SetZAxis.h to
-	  Ext_TRotation.h.  Rename the variable that indicates that the
-	  Ext_TRotation class is defined to Ext_TRotation for simplicity.
-	  Who knows, we might have to add more extensions than SetZAxis.
+	* src/: Ext_TRotation.h, TRotation_SetZAxis.h: Rename
+	  TRotation_SetZAxis.h to Ext_TRotation.h.  Rename the variable
+	  that indicates that the Ext_TRotation class is defined to
+	  Ext_TRotation for simplicity. Who knows, we might have to add
+	  more extensions than SetZAxis.
 
 2004-04-22 13:12  ole
 
@@ -2069,9 +3401,9 @@
 
 2004-04-22 12:37  ole
 
-	* src/THaSecondaryKine.C: Allow compilation of THaSecondaryKine for
-	  ROOT versions older than 3.05 (TRotation::SetZAxis function
-	  unavailable before 3.05).
+	* src/: THaSecondaryKine.C, TRotation_SetZAxis.h: Allow compilation
+	  of THaSecondaryKine for ROOT versions older than 3.05
+	  (TRotation::SetZAxis function unavailable before 3.05).
 
 2004-04-22 12:35  ole
 
@@ -2276,6 +3608,11 @@
 	  similar), but in this way we maintain backward compatibility and
 	  don't break any existing scripts.
 
+2004-03-26 11:21  ole
+
+	* src/: THaIORun.C, THaIORun.h: Remove unnecessary class THaIORun,
+	  which breaks the THaRun class design.
+
 2004-03-26 11:20  ole
 
 	* src/: THaFilter.C, THaFilter.h: Handle CODA output directly
@@ -2388,6 +3725,10 @@
 	  ctor. Fix memory leak in ctors (THaRun base class already assigns
 	  fCodaData).
 
+2004-02-27 17:27  ole
+
+	* src/: THaIORun.C, THaIORun.h: Implement operator= and copy ctor.
+
 2004-02-27 17:26  ole
 
 	* src/THaRunParameters.h: Make operator= non-virtual. Virtual
@@ -2455,9 +3796,9 @@
 
 2004-02-17 17:27  feuerbac
 
-	* src/: THaFilter.C, THaFilter.h, HallA_LinkDef.h,
-	  THaPostProcess.C, THaPostProcess.h: Add functionality for a raw
-	  (CODA) event filter output.
+	* src/: THaFilter.C, THaFilter.h, HallA_LinkDef.h, THaIORun.C,
+	  THaIORun.h, THaPostProcess.C, THaPostProcess.h: Add functionality
+	  for a raw (CODA) event filter output.
 
 2004-01-27 01:36  ole
 
@@ -2529,17 +3870,19 @@
 
 2003-11-26 15:41  ole
 
-	* Makefile, docs/RELEASE_NOTES.html, docs/RELEASE_NOTES_v1.0.txt,
-	  docs/add-det.html, docs/apparatus.html, docs/bpm.html,
-	  docs/database.html, docs/design.html, docs/detector.html,
-	  docs/index.html, docs/install.html, docs/new.gif,
-	  docs/preinstalled.html, docs/quickstart.html,
-	  docs/standard-analyzer.html, docs/test-guide.html,
-	  docs/updated.gif, docs/user-setup.html, docs/wallpaper.gif,
-	  hana_decode/THaEvData.C, hana_decode/THaEvData.h,
-	  src/HallA_LinkDef.h, src/THaAnalysisObject.C,
-	  src/THaAnalysisObject.h, src/THaAnalyzer.C, src/THaAnalyzer.h,
-	  src/THaBPM.h, src/THaBeam.C, src/THaBeam.h, src/THaCherenkov.h,
+	* Makefile, RELEASE_NOTES, docs/RELEASE_NOTES.html,
+	  docs/RELEASE_NOTES_v1.0.txt, docs/add-det.html,
+	  docs/apparatus.html, docs/bpm.html, docs/database.html,
+	  docs/design.html, docs/detector.html, docs/index.html,
+	  docs/install.html, docs/new.gif, docs/preinstalled.html,
+	  docs/quickstart.html, docs/standard-analyzer.html,
+	  docs/test-guide.html, docs/updated.gif, docs/user-setup.html,
+	  docs/wallpaper.gif, examples/cutdef.dat, examples/histdef.dat,
+	  examples/rich.dat, hana_decode/THaEvData.C,
+	  hana_decode/THaEvData.h, src/HallA_LinkDef.h,
+	  src/THaAnalysisObject.C, src/THaAnalysisObject.h,
+	  src/THaAnalyzer.C, src/THaAnalyzer.h, src/THaBPM.h,
+	  src/THaBeam.C, src/THaBeam.h, src/THaCherenkov.h,
 	  src/THaInterface.C, src/THaRaster.h, src/THaScintillator.h,
 	  src/THaShower.h, src/THaSpectrometer.C, src/THaTotalShower.h,
 	  src/THaVDC.C, src/THaVDCPlane.C, src/THaVDCPlane.h: Merge
@@ -2608,6 +3951,12 @@
 
 	* hana_decode/: THaEpics.C, THaEpics.h: new class THaEpics to
 	  handle EPICS data, replaces the obsolete THaEpicsStack
+
+2003-11-18 09:47  rom
+
+	* hana_decode/: THaEpicsStack.C, THaEpicsStack.h: removed obsolete
+	  class in THaEpicsStack.C and .h and it will be replaced by
+	  THaEpics
 
 2003-11-18 09:42  rom
 
@@ -2985,6 +4334,11 @@
 	* src/THaPrimaryKine.C: Bugfix: Actually use the projectile mass in
 	  the kinematics calculation.
 
+2003-10-14 16:19  ole
+
+	* DB/20000901/: db_s1.dat, db_sh.dat: Remove obsolete database
+	  files.
+
 2003-10-14 14:58  ole
 
 	* Makefile, src/HallA_LinkDef.h, src/THaElectronKine.C,
@@ -3142,6 +4496,11 @@
 	* examples/output_example.def: new output_examples.def, more
 	  complete with examples of new capabilities
 
+2003-07-01 14:46  rom
+
+	* examples/output.def: removed output.def since output_examples.def
+	  is sufficient.  Anyway, output.def was slightly wrong.
+
 2003-07-01 14:44  rom
 
 	* docs/output.html: new and more complete documentation about
@@ -3222,8 +4581,8 @@
 
 2003-06-23 11:49  ole
 
-	* docs/RELEASE_NOTES_v1.0.txt: Add note that most physics modules
-	  only operate on Golden Track.
+	* RELEASE_NOTES, docs/RELEASE_NOTES_v1.0.txt: Add note that most
+	  physics modules only operate on Golden Track.
 
 2003-06-19 23:08  feuerbac
 
@@ -3267,32 +4626,39 @@
 
 	* docs/index.html: First version of documentation index.
 
+2003-06-16 13:15  ole
+
+	* src/THaBpm.C: Remove obsolete file THaBpm.C, apparently forgotten
+	  in earlier cleanup.
+
 2003-06-16 13:07  ole
 
-	* .cvsignore, .exclude, Makefile, DB/20000901/db_run.dat,
-	  DB/20030101/db_L.cer.dat, DB/20030101/db_L.prl1.dat,
-	  DB/20030101/db_L.prl2.dat, DB/20030101/db_L.s1.dat,
-	  DB/20030101/db_L.s2.dat, DB/20030101/db_R.cer.dat,
-	  DB/20030101/db_R.ps.dat, DB/20030101/db_R.s1.dat,
-	  DB/20030101/db_R.s2.dat, DB/20030101/db_R.sh.dat,
-	  docs/RELEASE_NOTES_v1.0.txt, DB/20030101/db_R.ts.dat,
-	  DB/20030101/db_run.dat, DB/20030415/db_L.cer.dat,
-	  DB/20030415/db_L.s1.dat, DB/20030415/db_L.s2.dat,
-	  DB/20030415/db_L.vdc.dat, DB/20030415/db_R.cer.dat,
-	  DB/20030415/db_R.ps.dat, DB/20030415/db_R.s1.dat,
-	  DB/20030415/db_R.s2.dat, DB/20030415/db_R.sh.dat,
-	  DB/20030415/db_R.vdc.dat, DB/20030415/db_beam.dat,
-	  DB/20030415/db_run.dat, DB/DEFAULT/db_D.dat,
-	  DB/DEFAULT/db_run.dat, docs/FAQ.html, docs/add-det.html,
-	  docs/apparatus.html, docs/cvs.html, docs/design.html,
-	  docs/detector.html, docs/output.html, docs/quickstart.html,
-	  docs/standard-analyzer.html, docs/test-guide.html,
-	  examples/analyze_scaler.C, examples/cuts_example.def,
-	  examples/doit.C, examples/output_example.def, examples/setup.C,
+	* .cvsignore, .exclude, Makefile, RELEASE_NOTES,
+	  DB/20000901/db_run.dat, DB/20030101/db_L.cer.dat,
+	  DB/20030101/db_L.prl1.dat, DB/20030101/db_L.prl2.dat,
+	  DB/20030101/db_L.s1.dat, DB/20030101/db_L.s2.dat,
+	  DB/20030101/db_R.cer.dat, DB/20030101/db_R.ps.dat,
+	  DB/20030101/db_R.s1.dat, DB/20030101/db_R.s2.dat,
+	  DB/20030101/db_R.sh.dat, docs/RELEASE_NOTES_v1.0.txt,
+	  DB/20030101/db_R.ts.dat, DB/20030101/db_run.dat,
+	  DB/20030415/db_L.cer.dat, DB/20030415/db_L.s1.dat,
+	  DB/20030415/db_L.s2.dat, DB/20030415/db_L.vdc.dat,
+	  DB/20030415/db_R.cer.dat, DB/20030415/db_R.ps.dat,
+	  DB/20030415/db_R.s1.dat, DB/20030415/db_R.s2.dat,
+	  DB/20030415/db_R.sh.dat, DB/20030415/db_R.vdc.dat,
+	  DB/20030415/db_beam.dat, DB/20030415/db_run.dat,
+	  DB/DEFAULT/db_D.dat, DB/DEFAULT/db_run.dat, docs/FAQ.html,
+	  docs/add-det.html, docs/apparatus.html, docs/cvs.html,
+	  docs/design.html, docs/detector.html, docs/output.html,
+	  docs/quickstart.html, docs/standard-analyzer.html,
+	  docs/test-guide.html, examples/analyze_scaler.C,
+	  examples/cuts_example.def, examples/doit.C, examples/output.def,
+	  examples/output_example.def, examples/setup.C,
 	  examples/setup_demo.C, hana_decode/.cvsignore,
 	  hana_decode/Makefile, hana_decode/THaBenchmark.h,
 	  hana_decode/THaCodaFile.C, hana_decode/THaCrateMap.C,
-	  hana_decode/THaCrateMap.h, hana_decode/THaEvData.C,
+	  hana_decode/THaCrateMap.h, hana_decode/THaEpicsStack.C,
+	  hana_decode/THaEpicsStack.h, hana_decode/THaEvData.C,
 	  hana_decode/THaEvData.h, hana_decode/THaFastBusWord.C,
 	  hana_decode/THaFastBusWord.h, hana_decode/THaHelicity.C,
 	  hana_decode/THaHelicity.h, hana_decode/THaSlotData.C,
@@ -3300,7 +4666,9 @@
 	  hana_decode/THaUsrstrutils.h, hana_decode/haDecode_LinkDef.h,
 	  hana_decode/swap_util.C, hana_scaler/.cvsignore,
 	  hana_scaler/Makefile, hana_scaler/README,
+	  hana_scaler/THaNormScaler.C, hana_scaler/THaNormScaler.h,
 	  hana_scaler/THaScaler.C, hana_scaler/THaScaler.h,
+	  hana_scaler/THaScalerBank.C, hana_scaler/THaScalerBank.h,
 	  hana_scaler/THaScalerDB.C, hana_scaler/THaScalerDB.h,
 	  hana_scaler/tscalasy_main.C, hana_scaler/tscaldtime_main.C,
 	  hana_scaler/tscalevt_main.C, hana_scaler/tscalfile_main.C,
@@ -3312,26 +4680,28 @@
 	  src/THaArrayString.h, src/THaAvgVertex.C, src/THaAvgVertex.h,
 	  src/THaBPM.C, src/THaBPM.h, src/THaBeam.C, src/THaHelicity.C,
 	  src/THaHelicity.h, src/THaBeam.h, src/THaBeamDet.C,
-	  src/THaBeamDet.h, src/THaCherenkov.C, src/THaCherenkov.h,
-	  src/THaCluster.C, src/THaCutList.C, src/THaCutList.h,
-	  src/THaDB.C, src/THaDB.h, src/THaDebugModule.C,
+	  src/THaBeamDet.h, src/THaBpm.C, src/THaBpm.h, src/THaCherenkov.C,
+	  src/THaCherenkov.h, src/THaCluster.C, src/THaCutList.C,
+	  src/THaCutList.h, src/THaDB.C, src/THaDB.h, src/THaDebugModule.C,
 	  src/THaDebugModule.h, src/THaDecData.C, src/THaDecData.h,
 	  src/THaDetMap.C, src/THaDetMap.h, src/THaDetector.C,
 	  src/THaDetector.h, src/THaDetectorBase.C, src/THaDetectorBase.h,
-	  src/THaElectronKine.C, src/THaElectronKine.h, src/THaEvent.C,
-	  src/THaEvent.h, src/THaExtTarCor.C, src/THaExtTarCor.h,
-	  src/THaFormula.C, src/THaFormula.h, src/THaGlobals.h,
-	  src/THaGoldenTrack.C, src/THaGoldenTrack.h, src/THaHRS.C,
-	  src/THaHRS.h, src/THaIdealBeam.C, src/THaIdealBeam.h,
-	  src/THaInterface.C, src/THaNamedList.C, src/THaNamedList.h,
-	  src/THaNonTrackingDetector.h, src/THaOutput.C, src/THaOutput.h,
-	  src/THaPIDinfo.C, src/THaPIDinfo.h, src/THaParticleInfo.C,
-	  src/THaParticleInfo.h, src/THaPhysicsModule.C,
-	  src/THaPhysicsModule.h, src/THaPidDetector.h,
-	  src/THaPrintOption.h, src/THaRTTI.C, src/THaRaster.C,
-	  src/THaRaster.h, src/THaRasteredBeam.C, src/THaRasteredBeam.h,
-	  src/THaRawEvent.C, src/THaRawEvent.h, src/THaReactionPoint.C,
-	  src/THaReactionPoint.h, src/THaRun.C, src/THaRun.h,
+	  src/THaElectronKine.C, src/THaElectronKine.h, src/THaEpicsData.C,
+	  src/THaEpicsData.h, src/THaEvent.C, src/THaEvent.h,
+	  src/THaExtTarCor.C, src/THaExtTarCor.h, src/THaFormula.C,
+	  src/THaFormula.h, src/THaGlobals.h, src/THaGoldenTrack.C,
+	  src/THaGoldenTrack.h, src/THaHRS.C, src/THaHRS.h,
+	  src/THaIdealBeam.C, src/THaIdealBeam.h, src/THaInterface.C,
+	  src/THaLeftHRS.C, src/THaLeftHRS.h, src/THaNamedList.C,
+	  src/THaNamedList.h, src/THaNonTrackingDetector.h,
+	  src/THaOutput.C, src/THaOutput.h, src/THaPIDinfo.C,
+	  src/THaPIDinfo.h, src/THaParticleInfo.C, src/THaParticleInfo.h,
+	  src/THaPhysicsModule.C, src/THaPhysicsModule.h,
+	  src/THaPidDetector.h, src/THaPrintOption.h, src/THaRTTI.C,
+	  src/THaRaster.C, src/THaRaster.h, src/THaRasteredBeam.C,
+	  src/THaRasteredBeam.h, src/THaRawEvent.C, src/THaRawEvent.h,
+	  src/THaReactionPoint.C, src/THaReactionPoint.h,
+	  src/THaRightHRS.C, src/THaRightHRS.h, src/THaRun.C, src/THaRun.h,
 	  src/THaScalerGroup.C, src/THaScalerGroup.h,
 	  src/THaScintillator.C, src/THaScintillator.h, src/THaShower.C,
 	  src/THaShower.h, src/THaSpectrometer.C, src/THaSpectrometer.h,
@@ -3344,12 +4714,14 @@
 	  src/THaTwoarmVertex.C, src/THaTwoarmVertex.h,
 	  src/THaUnRasteredBeam.C, src/THaUnRasteredBeam.h, src/THaVDC.C,
 	  src/THaVDC.h, src/THaVDCCluster.C, src/THaVDCCluster.h,
-	  src/THaVDCHit.C, src/THaVDCHit.h, src/THaVDCPlane.C,
-	  src/THaVDCPlane.h, src/THaVDCTrackID.C, src/THaVDCTrackPair.C,
-	  src/THaVDCUVPlane.C, src/THaVDCUVPlane.h, src/THaVDCWire.C,
-	  src/THaVDCWire.h, src/THaVar.C, src/THaVar.h, src/THaVarList.C,
-	  src/THaVarList.h, src/THaVertexModule.C, src/THaVertexModule.h,
-	  src/VarDef.h: Move Release-070 branch onto the CVS trunk.
+	  src/THaVDCHit.C, src/THaVDCHit.h, src/THaVDCLookupTTDConv.C,
+	  src/THaVDCLookupTTDConv.h, src/THaVDCPlane.C, src/THaVDCPlane.h,
+	  src/THaVDCT0CalTable.C, src/THaVDCT0CalTable.h,
+	  src/THaVDCTrackID.C, src/THaVDCTrackPair.C, src/THaVDCUVPlane.C,
+	  src/THaVDCUVPlane.h, src/THaVDCWire.C, src/THaVDCWire.h,
+	  src/THaVar.C, src/THaVar.h, src/THaVarList.C, src/THaVarList.h,
+	  src/THaVertexModule.C, src/THaVertexModule.h, src/VarDef.h: Move
+	  Release-070 branch onto the CVS trunk.
 
 2003-05-15 18:57  feuerbac
 
@@ -3485,8 +4857,8 @@
 
 2003-02-20 11:47  feuerbac
 
-	* src/: THaDetMap.C, THaDetMap.h, THaRaster.C: Changed the format
-	  of the THaDetMap::Module to hold first-logical-channel
+	* src/: THaBpm.C, THaDetMap.C, THaDetMap.h, THaRaster.C: Changed
+	  the format of the THaDetMap::Module to hold first-logical-channel
 	  information as well, to decrease the need for parallel FirstChan
 	  arrays.
 
@@ -3578,6 +4950,12 @@
 	* DB/20030101/: db_L.s1.dat, db_L.s2.dat, db_L.vdc.dat,
 	  db_R.s1.dat, db_R.s2.dat, db_R.vdc.dat: New database files for
 	  experiment E01-012 (Jan-Feb 2003).
+
+2003-01-24 13:22  ole
+
+	* src/THaRightHRS.C: Removed Cherenkov detectors from default
+	  spectrometer configuration.  These should be added if needed
+	  either with AddDetector or with a more specific derived class.
 
 2003-01-17 14:36  ole
 
@@ -3789,6 +5167,10 @@
 
 2002-09-12 12:04  rom
 
+	* examples/output.def: definitions file needed by THaOutput class
+
+2002-09-12 12:04  rom
+
 	* examples/setup.C: new example setup (add THaDecData and
 	  simplified THaEvent
 
@@ -3964,8 +5346,9 @@
 
 2002-07-17 20:52  dobbs
 
-	* src/: THaVDCHit.C, THaVDCPlane.C: Minor bug fixes related to
-	  lookup table TTD converter
+	* src/: THaVDCHit.C, THaVDCLookupTTDConv.C, THaVDCLookupTTDConv.h,
+	  THaVDCPlane.C: Minor bug fixes related to lookup table TTD
+	  converter
 
 	  THaVDCLookupTTDConv.C: added experimental code to do theta
 	  corrections
@@ -3995,7 +5378,8 @@
 
 2002-06-20 16:51  dobbs
 
-	* src/: HallA_LinkDef.h, THaVDCPlane.C, THaVDCPlane.h: Added lookup
+	* src/: HallA_LinkDef.h, THaVDCLookupTTDConv.C,
+	  THaVDCLookupTTDConv.h, THaVDCPlane.C, THaVDCPlane.h: Added lookup
 	  table TTD calculation lookup table stored in VDC plane objects
 
 2002-06-20 16:48  dobbs
@@ -4084,7 +5468,7 @@
 
 2002-04-30 16:45  ole
 
-	* docs/RELEASE_NOTES_v1.0.txt: Test check-in
+	* RELEASE_NOTES, docs/RELEASE_NOTES_v1.0.txt: Test check-in
 
 2002-04-24 17:50  rom
 
@@ -4154,7 +5538,8 @@
 
 2002-04-01 15:24  ole
 
-	* docs/RELEASE_NOTES_v1.0.txt: Updated for Release 0.65
+	* RELEASE_NOTES, docs/RELEASE_NOTES_v1.0.txt: Updated for Release
+	  0.65
 
 2002-04-01 14:28  ole
 
@@ -4176,7 +5561,8 @@
 	* DB/20000901/: db_L.aero1.dat, db_L.cer.dat, db_L.s1.dat,
 	  db_L.s2.dat, db_L.vdc.dat, db_R.aero1.dat, db_R.cer.dat,
 	  db_R.ps.dat, db_R.s1.dat, db_R.s2.dat, db_R.sh.dat, db_R.ts.dat,
-	  db_R.vdc.dat: Initial revision of new data base files for E97111.
+	  db_R.vdc.dat, db_s1.dat, db_sh.dat: Initial revision of new data
+	  base files for E97111.
 
 2002-03-27 15:12  ole
 
@@ -4435,8 +5821,9 @@
 
 2002-03-05 17:36  ole
 
-	* Makefile, src/HallA_LinkDef.h: Remove RICH code. Will be put in a
-	  standalone library.
+	* Makefile, src/HallA_LinkDef.h, src/THaRICH.C, src/THaRICH.h,
+	  src/THaRICHClusterList.C, src/THaRICHClusterList.h: Remove RICH
+	  code. Will be put in a standalone library.
 
 2002-03-05 17:32  ole
 
@@ -4483,9 +5870,9 @@
 
 2002-02-28 16:18  ole
 
-	* src/: THaCherenkov.C, THaRaster.C, THaScintillator.C,
-	  THaShower.C, THaTotalShower.C: Global variables now defined via
-	  RTTI in all std detector classes.
+	* src/: THaBpm.C, THaCherenkov.C, THaEpicsData.C, THaRaster.C,
+	  THaScintillator.C, THaShower.C, THaTotalShower.C: Global
+	  variables now defined via RTTI in all std detector classes.
 
 2002-02-28 15:54  ole
 
@@ -4598,7 +5985,7 @@
 
 2001-12-06 15:12  ole
 
-	* src/: THaCherenkov.C, THaRaster.C, THaScintillator.C,
+	* src/: THaBpm.C, THaCherenkov.C, THaRaster.C, THaScintillator.C,
 	  THaShower.C: Remove dependency on THaVarList.h
 
 2001-12-06 15:11  ole
@@ -4625,10 +6012,11 @@
 	* src/: THaVDC.C, THaVDC.h, THaVDCAnalyticTTDConv.C,
 	  THaVDCAnalyticTTDConv.h, THaVDCCluster.C, THaVDCCluster.h,
 	  THaVDCHit.C, THaVDCHit.h, THaVDCPlane.C, THaVDCPlane.h,
-	  THaVDCTimeToDistConv.C, THaVDCTimeToDistConv.h, THaVDCUVPlane.C,
-	  THaVDCUVPlane.h, THaVDCUVTrack.C, THaVDCUVTrack.h, THaVDCWire.C,
-	  THaVDCWire.h: Initial check-in of high-precision VDC class.  No
-	  global VDC variables yet.
+	  THaVDCT0CalTable.C, THaVDCT0CalTable.h, THaVDCTimeToDistConv.C,
+	  THaVDCTimeToDistConv.h, THaVDCUVPlane.C, THaVDCUVPlane.h,
+	  THaVDCUVTrack.C, THaVDCUVTrack.h, THaVDCWire.C, THaVDCWire.h:
+	  Initial check-in of high-precision VDC class.  No global VDC
+	  variables yet.
 
 2001-12-05 16:12  ole
 
@@ -4636,12 +6024,12 @@
 
 2001-12-05 16:10  ole
 
-	* src/: THaDetector.C, THaDetector.h, THaDetectorBase.C,
-	  THaDetectorBase.h, THaRaster.C, THaSubDetector.C,
-	  THaSubDetector.h, THaTotalShower.C: Move MakePrefix() calls from
-	  THaDetectorBase constructor to Init() so we can use a virtual
-	  function. Some detectors need special prefixes to get sane global
-	  variable names.
+	* src/: THaBpm.C, THaDetector.C, THaDetector.h, THaDetectorBase.C,
+	  THaDetectorBase.h, THaEpicsData.C, THaRICH.C, THaRaster.C,
+	  THaSubDetector.C, THaSubDetector.h, THaTotalShower.C: Move
+	  MakePrefix() calls from THaDetectorBase constructor to Init() so
+	  we can use a virtual function. Some detectors need special
+	  prefixes to get sane global variable names.
 
 	  Add GetDBFileName() function to allow subdetectors to use the
 	  same database file as their parent detectors.
@@ -4669,79 +6057,82 @@
 
 2001-11-14 16:02  ole
 
-	* src/THaPidDetector.C, DB/19970101/db_L.s1.dat,
-	  DB/19970101/db_L.s2.dat, DB/19970101/db_R.aero1.dat,
-	  DB/19970101/db_R.cer.dat, DB/19970101/db_R.ps.dat,
-	  DB/19970101/db_R.s1.dat, DB/19970101/db_R.s2.dat,
-	  DB/19970101/db_R.sh.dat, DB/19970101/db_R.ts.dat,
-	  DB/20010101/db_L.aero1.dat, DB/20010101/db_L.cer.dat,
-	  DB/20010101/db_L.s1.dat, DB/20010101/db_L.s2.dat,
-	  DB/20010101/db_R.aero1.dat, DB/20010101/db_R.cer.dat,
-	  DB/20010101/db_R.ps.dat, DB/20010101/db_R.s1.dat,
-	  DB/20010101/db_R.s2.dat, DB/20010101/db_R.sh.dat,
-	  DB/20010101/db_R.ts.dat, examples/demo_VDC.C,
-	  examples/demo_aerogel.C, examples/demo_cherenkov.C,
-	  examples/demo_s1.C, examples/demo_VDC.h, examples/demo_s2.C,
-	  examples/demo_shower.C, examples/demo_track.C,
-	  hana_decode/README_ET, hana_decode/et.h, hana_decode/next_onl.C:
-	  Initial import Release 0.61
-
-2001-11-14 16:02  ole
-
-	* Makefile, docs/RELEASE_NOTES_v1.0.txt, src/THaAnalyzer.C,
-	  src/THaApparatus.C, src/THaArrayString.C, src/THaBeam.C,
-	  src/THaCherenkov.C, src/THaCut.C, src/THaCutList.C,
-	  src/THaDetMap.C, src/THaDetector.C, src/THaDetectorBase.C,
-	  src/THaEvent.C, src/THaFormula.C, src/THaHRS.C,
-	  src/THaInterface.C, src/THaNamedList.C,
+	* Makefile, RELEASE_NOTES, docs/RELEASE_NOTES_v1.0.txt,
+	  src/THaAnalyzer.C, src/THaApparatus.C, src/THaArrayString.C,
+	  src/THaBeam.C, src/THaBpm.C, src/THaCherenkov.C, src/THaCut.C,
+	  src/THaCutList.C, src/THaDetMap.C, src/THaDetector.C,
+	  src/THaDetectorBase.C, src/THaEpicsData.C, src/THaEvent.C,
+	  src/THaFormula.C, src/THaHRS.C, src/THaInterface.C,
+	  src/THaLeftHRS.C, src/THaMatrix.C, src/THaNamedList.C,
 	  src/THaNonTrackingDetector.C, src/THaPIDinfo.C,
-	  src/THaParticleInfo.C, src/THaPrintOption.C, src/THaRaster.C,
-	  src/THaRawEvent.C, src/THaRun.C, src/THaScintillator.C,
-	  src/THaShower.C, src/THaSpectrometer.C,
-	  src/THaSpectrometerDetector.C, src/THaSubDetector.C,
-	  src/THaTotalShower.C, src/THaTrack.C, src/THaTrackingDetector.C,
-	  src/THaVDC.C, src/HallA_LinkDef.h, src/THaAnalyzer.h,
-	  src/THaApparatus.h, src/THaArrayString.h, src/THaBeam.h,
-	  src/THaCherenkov.h, src/THaCut.h, src/THaCutList.h,
-	  src/THaDetMap.h, src/THaDetector.h, src/THaDetectorBase.h,
-	  src/THaEvent.h, src/THaFormula.h, src/THaGlobals.h, src/THaHRS.h,
-	  src/THaInterface.h, src/THaNamedList.h,
-	  src/THaNonTrackingDetector.h, src/THaPIDinfo.h,
-	  src/THaParticleInfo.h, src/THaPidDetector.h,
-	  src/THaPrintOption.h, src/THaRaster.h, src/THaRawEvent.h,
+	  src/THaParticleInfo.C, src/THaPidDetector.C,
+	  src/THaPrintOption.C, src/THaRICH.C, src/THaRICHClusterList.C,
+	  src/THaRaster.C, src/THaRawEvent.C, src/THaRightHRS.C,
+	  src/THaRun.C, src/THaScintillator.C, src/THaShower.C,
+	  src/THaSpectrometer.C, src/THaSpectrometerDetector.C,
+	  src/THaSubDetector.C, src/THaTotalShower.C, src/THaTrack.C,
+	  src/THaTrackingDetector.C, src/THaVDC.C, src/HallA_LinkDef.h,
+	  src/THaAnalyzer.h, src/THaApparatus.h, src/THaArrayString.h,
+	  src/THaBeam.h, src/THaBpm.h, src/THaCherenkov.h, src/THaCut.h,
+	  src/THaCutList.h, src/THaDetMap.h, src/THaDetector.h,
+	  src/THaDetectorBase.h, src/THaEpicsData.h, src/THaEvent.h,
+	  src/THaFormula.h, src/THaGlobals.h, src/THaHRS.h,
+	  src/THaInterface.h, src/THaLeftHRS.h, src/THaMatrix.h,
+	  src/THaNamedList.h, src/THaNonTrackingDetector.h,
+	  src/THaPIDinfo.h, src/THaParticleInfo.h, src/THaPidDetector.h,
+	  src/THaPrintOption.h, src/THaRICH.h, src/THaRICHClusterList.h,
+	  src/THaRaster.h, src/THaRawEvent.h, src/THaRightHRS.h,
 	  src/THaRun.h, src/THaScintillator.h, src/THaShower.h,
 	  src/THaSpectrometer.h, src/THaSpectrometerDetector.h,
 	  src/THaSubDetector.h, src/THaTotalShower.h, src/THaTrack.h,
 	  src/THaTrackingDetector.h, src/THaVDC.h, src/THaVar.C,
 	  src/THaVar.h, src/THaVarList.C, src/THaVarList.h, src/VarDef.h,
-	  src/VarType.h, src/main.C, DB/19970101/db_L.vdc.dat,
-	  DB/19970101/db_R.vdc.dat, DB/20010101/db_L.vdc.dat,
-	  DB/20010101/db_R.vdc.dat, examples/setup.C,
-	  examples/setup_demo.C, hana_scaler/Makefile, hana_scaler/README,
-	  hana_scaler/THaScaler.C, hana_scaler/THaScaler.h,
-	  hana_scaler/THaScalerDB.C, hana_scaler/THaScalerDB.h,
-	  hana_scaler/THaScalerGui.C, hana_scaler/THaScalerGui.h,
-	  hana_scaler/haScal_LinkDef.h, hana_scaler/scaler.map,
-	  hana_scaler/tscalasy_main.C, hana_scaler/tscaldtime_main.C,
-	  hana_scaler/tscalfile_main.C, hana_scaler/tscalgui_main.C,
-	  hana_scaler/tscalhist_main.C, hana_scaler/tscalntup_main.C,
-	  hana_scaler/tscalonl_main.C, hana_decode/ChangeLog,
-	  hana_decode/Makefile, hana_decode/README,
-	  hana_decode/THaCodaData.C, hana_decode/THaCodaData.h,
-	  hana_decode/THaCodaFile.C, hana_decode/THaCodaFile.h,
-	  hana_decode/THaCrateMap.C, hana_decode/THaCrateMap.h,
-	  hana_decode/THaEtClient.C, hana_decode/THaEtClient.h,
-	  hana_decode/THaEvData.C, hana_decode/THaEvData.h,
-	  hana_decode/THaFastBusWord.C, hana_decode/THaFastBusWord.h,
-	  hana_decode/THaGenDetTest.C, hana_decode/THaGenDetTest.h,
-	  hana_decode/THaHelicity.C, hana_decode/THaHelicity.h,
-	  hana_decode/THaSlotData.C, hana_decode/THaSlotData.h,
-	  hana_decode/THaUsrstrutils.C, hana_decode/THaUsrstrutils.h,
+	  src/VarType.h, src/main.C, DB/19970101/db_L.s1.dat,
+	  DB/19970101/db_L.s2.dat, DB/19970101/db_L.vdc.dat,
+	  DB/19970101/db_R.aero1.dat, DB/19970101/db_R.cer.dat,
+	  DB/19970101/db_R.ps.dat, DB/19970101/db_R.s1.dat,
+	  DB/19970101/db_R.s2.dat, DB/19970101/db_R.sh.dat,
+	  DB/19970101/db_R.ts.dat, DB/19970101/db_R.vdc.dat,
+	  DB/20010101/db_L.aero1.dat, DB/20010101/db_L.cer.dat,
+	  DB/20010101/db_L.s1.dat, DB/20010101/db_L.s2.dat,
+	  DB/20010101/db_L.vdc.dat, DB/20010101/db_R.aero1.dat,
+	  DB/20010101/db_R.cer.dat, DB/20010101/db_R.ps.dat,
+	  DB/20010101/db_R.s1.dat, DB/20010101/db_R.s2.dat,
+	  DB/20010101/db_R.sh.dat, DB/20010101/db_R.ts.dat,
+	  DB/20010101/db_R.vdc.dat, examples/demo_VDC.C,
+	  examples/demo_aerogel.C, examples/demo_cherenkov.C,
+	  examples/demo_s1.C, examples/setup.C, examples/setup_demo.C,
+	  examples/cutdef.dat, examples/demo_VDC.h, examples/demo_s2.C,
+	  examples/demo_shower.C, examples/demo_track.C,
+	  examples/histdef.dat, examples/rich.dat, hana_scaler/Makefile,
+	  hana_scaler/README, hana_scaler/THaNormScaler.C,
+	  hana_scaler/THaNormScaler.h, hana_scaler/THaScaler.C,
+	  hana_scaler/THaScaler.h, hana_scaler/THaScalerBank.C,
+	  hana_scaler/THaScalerBank.h, hana_scaler/THaScalerDB.C,
+	  hana_scaler/THaScalerDB.h, hana_scaler/THaScalerGui.C,
+	  hana_scaler/THaScalerGui.h, hana_scaler/haScal_LinkDef.h,
+	  hana_scaler/scaler.map, hana_scaler/tscalasy_main.C,
+	  hana_scaler/tscaldtime_main.C, hana_scaler/tscalfile_main.C,
+	  hana_scaler/tscalgui_main.C, hana_scaler/tscalhist_main.C,
+	  hana_scaler/tscalntup_main.C, hana_scaler/tscalonl_main.C,
+	  hana_decode/ChangeLog, hana_decode/Makefile, hana_decode/README,
+	  hana_decode/README_ET, hana_decode/THaCodaData.C,
+	  hana_decode/THaCodaData.h, hana_decode/THaCodaFile.C,
+	  hana_decode/THaCodaFile.h, hana_decode/THaCrateMap.C,
+	  hana_decode/THaCrateMap.h, hana_decode/THaEpicsStack.C,
+	  hana_decode/THaEpicsStack.h, hana_decode/THaEtClient.C,
+	  hana_decode/THaEtClient.h, hana_decode/THaEvData.C,
+	  hana_decode/THaEvData.h, hana_decode/THaFastBusWord.C,
+	  hana_decode/THaFastBusWord.h, hana_decode/THaGenDetTest.C,
+	  hana_decode/THaGenDetTest.h, hana_decode/THaHelicity.C,
+	  hana_decode/THaHelicity.h, hana_decode/THaSlotData.C,
+	  hana_decode/THaSlotData.h, hana_decode/THaUsrstrutils.C,
+	  hana_decode/THaUsrstrutils.h, hana_decode/et.h,
 	  hana_decode/etclient_main.C, hana_decode/evio.C,
 	  hana_decode/evio.h, hana_decode/haDecode_LinkDef.h,
-	  hana_decode/prfact_main.C, hana_decode/swap_util.C,
-	  hana_decode/swapped_intcpy.c, hana_decode/tdecex_main.C,
-	  hana_decode/tdecpr_main.C, hana_decode/tstcoda_main.C,
-	  hana_decode/tstio_main.C, src/THaHelicity.C, src/THaHelicity.h:
-	  Initial revision
+	  hana_decode/next_onl.C, hana_decode/prfact_main.C,
+	  hana_decode/swap_util.C, hana_decode/swapped_intcpy.c,
+	  hana_decode/tdecex_main.C, hana_decode/tdecpr_main.C,
+	  hana_decode/tstcoda_main.C, hana_decode/tstio_main.C,
+	  src/THaHelicity.C, src/THaHelicity.h: Initial revision
 

@@ -1,29 +1,44 @@
 
 
-	Modifications to hana_scaler
+	Modifications to hana_scaler (latest at top)
 	============================
 
-        Jan 31, 2003
+        July 12, 2008
+        =============
 
-	Small bug fixes in THaScaler
-	scaler.map updated
-	tscalring -- new analyzer for ring buffer data
-        Added some new macros ( *.macro ) to look at root output.
+	Makefile  added standalone codes for bigbite, Qasy feedback.
 
+        scaler.map    updated
 
-	Jan 20, 2002
+        THaScaler    add bigbite scalers
+                  Fix bug: if crate length zero don't decode ev* scalers.
+                  support to normalize by current
+                  misc small diffs to ADAQ version (e.g. variable names)
 
-	THaScaler.C  and .h  
-	Added the RCS and synchronous scalers (roc9, roc11, etc).
+	THaScalerDB   Fix bug: if crate tied to another, use it's short names.
+                      (affected ev* "default" list in THaOutput)
+	
+        THaScalerGui     provision to norm. by current. 
+                         improved help dialog.
 
-	THaScalerGui.C and .h
-	"scaler" is now a member, instead of inherited.  Solved compilation
-	problems in Ole's released version.
+	Added:
+        tscalbbite_main.C    test code for bigbite 
+        tscalbad_main.C      test code for 'bad' data (fails G0 sequence)
 
-	scaler.map  - updated.
+        tscalgui_main.C      update for bigbite
+                             (backward compatible)
 
-	Jan 26, 2005
+        tscalhist_main.C   slightly better ADAQ version
+	tscalntup_main.C   slightly better ADAQ version
 
+        Note: The ADAQ version had a plethora of "std::" in the
+	THaScaler.C and THaScalerDB.C implementation, but these were
+	not in the CVS version.  I decided to stick with the CVS version,
+        as it is more readable.  Implementation uses namespace std.
+
+        Jan 26, 2005
+        ============
+	
         1. scaler.map modifications.  
           a) Parsing of "DATE" is more intelligent.
           b) Can tie scalers of different helicities or crates together
@@ -36,5 +51,28 @@
 
         4) THaScalerGui (used by xscaler) driven by scaler.map
            but with sensible defaults of scaler.map absent.
+
+	
+        Jan 31, 2003
+        ============
+
+	Small bug fixes in THaScaler
+	scaler.map updated
+	tscalring -- new analyzer for ring buffer data
+        Added some new macros ( *.macro ) to look at root output.
+
+
+	Jan 20, 2002
+        ============
+
+	THaScaler.C  and .h  
+	Added the RCS and synchronous scalers (roc9, roc11, etc).
+
+	THaScalerGui.C and .h
+	"scaler" is now a member, instead of inherited.  Solved compilation
+	problems in Ole's released version.
+
+	scaler.map  - updated.
+
       
 

@@ -54,6 +54,9 @@
 #include "TMath.h"
 #include "TList.h"
 
+#include "TList.h"
+#include "TMath.h"
+
 #ifdef WITH_DEBUG
 #include <iostream>
 #endif
@@ -71,6 +74,8 @@ THaHRS::THaHRS( const char* name, const char* description ) :
   AddDetector( new THaScintillator("s2", "S2 scintillator"));
 
   sc_ref = static_cast<THaScintillator*>(GetDetector("s1"));
+
+  SetTrSorting(kFALSE);
 }
 
 //_____________________________________________________________________________
@@ -79,6 +84,23 @@ THaHRS::~THaHRS()
   // Destructor
 }
 
+//_____________________________________________________________________________
+Bool_t THaHRS::SetTrSorting( Bool_t set )
+{
+  if( set )
+    fProperties |= kSortTracks;
+  else
+    fProperties &= ~kSortTracks;
+
+  return set;
+}
+
+//_____________________________________________________________________________
+Bool_t THaHRS::GetTrSorting() const
+{
+  return ((fProperties & kSortTracks) != 0);
+}
+ 
 //_____________________________________________________________________________
 Int_t THaHRS::FindVertices( TClonesArray& tracks )
 {
@@ -99,10 +121,24 @@ Int_t THaHRS::FindVertices( TClonesArray& tracks )
 #endif
   }
 
+  // If enabled, sort the tracks by chi2/ndof
+  if( GetTrSorting() )
+    fTracks->Sort();
+  
   // Find the "Golden Track". 
-
   if( GetNTracks() > 0 ) {
-    //FIXME: quick and dirty hack to get started ...
+    // Select first track in the array. If there is more than one track
+    // and track sorting is enabled, then this is the best fit track
+    // (smallest chi2/ndof).  Otherwise, it is the track with the best
+    // geometrical match (smallest residuals) between the U/V clusters
+    // in the upper and lower VDCs (old behavior).
+    // 
+    // Chi2/dof is a well-defined quantity, and the track selected in this
+    // way is immediately physically meaningful. The geometrical match
+    // criterion is mathematically less well defined and not usually used
+    // in track reconstruction. Hence, chi2 sortiing is preferable, albeit
+    // obviously slower.
+
     fGoldenTrack = static_cast<THaTrack*>( fTracks->At(0) );
     fTrkIfo      = *fGoldenTrack;
     fTrk         = fGoldenTrack;

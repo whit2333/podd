@@ -91,7 +91,7 @@ THaAnalysisObject::EStatus THaReactionPoint::Init( const TDatime& run_time )
 }
 
 //_____________________________________________________________________________
-Int_t THaReactionPoint::Process( const THaEvData& evdata )
+Int_t THaReactionPoint::Process( const THaEvData& )
 {
   // Calculate the vertex coordinates.
 
@@ -117,7 +117,7 @@ Int_t THaReactionPoint::Process( const THaEvData& evdata )
     // Ignore junk tracks
     if( !theTrack || !theTrack->HasTarget() ) 
       continue;  
-    org.SetY( theTrack->GetTY() );
+    org.SetXYZ( 0.0, theTrack->GetTY(), 0.0 );
     org *= fSpectro->GetToLabRot();
     org += fSpectro->GetPointingOffset();
     if( !IntersectPlaneWithRay( theTrack->GetPvect(), yax, org, 

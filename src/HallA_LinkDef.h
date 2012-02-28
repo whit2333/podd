@@ -10,6 +10,8 @@
 #pragma link C++ global gHaScalers;
 #pragma link C++ global gHaPhysics;
 #pragma link C++ global gHaRun;
+#pragma link C++ global gHaDB;
+#pragma link C++ global gHaTextvars;
 
 #pragma link C++ class THaVar+;
 #pragma link C++ class THaVarList+;
@@ -41,6 +43,7 @@
 #pragma link C++ class THaNonTrackingDetector+;
 #pragma link C++ class THaPidDetector+;
 #pragma link C++ class THaDetMap+;
+#pragma link C++ class THaDetMap::Module+;
 #pragma link C++ class THaScintillator+;
 #pragma link C++ class THaScintillator::DataDest+;
 #pragma link C++ class THaEvent+;
@@ -48,7 +51,6 @@
 #pragma link C++ class THaOutput+;
 //#pragma link C++ class THaOdata+;
 //#pragma link C++ class THaScalerKey+;
-#pragma link C++ class THaString+;
 #pragma link C++ class THaAnalyzer+;
 #pragma link C++ class THaPrintOption+;
 #pragma link C++ class THaBeam+;
@@ -79,8 +81,6 @@
 #pragma link C++ class THaVDCTrackID+;
 #pragma link C++ class THaVDCTrackPair+;
 #pragma link C++ class THaRTTI+;
-#pragma link C++ class THaRawEvent+;
-#pragma link C++ class THaVDCEvent+;
 #pragma link C++ class THaScalerGroup+;
 #pragma link C++ class THaElectronKine+;
 #pragma link C++ class THaReactionPoint+;
@@ -93,9 +93,6 @@
 #pragma link C++ class THaGoldenTrack+;
 #pragma link C++ class THaPrimaryKine+;
 #pragma link C++ class THaSecondaryKine+;
-#pragma link C++ class THaDB+;
-#pragma link C++ class THaDetConfig+;
-#pragma link C++ class THaDBFile+;
 #pragma link C++ class THaCoincTime+;
 #pragma link C++ class THaS2CoincTime+;
 #pragma link C++ class THaTrackProj+;
@@ -109,11 +106,23 @@
 #pragma link C++ class THaBeamEloss+;
 #pragma link C++ class THaTriggerTime+;
 #pragma link C++ class THaTrackOut+;
+#pragma link C++ class THaHelicityDet+;
+#pragma link C++ class THaADCHelicity+;
+#pragma link C++ class THaADCHelicity::ChanDef_t+;
+#pragma link C++ class THaHelicity+;
+#pragma link C++ class THaG0HelicityReader+;
+#pragma link C++ class THaG0HelicityReader::ROCinfo+;
+#pragma link C++ class THaG0Helicity+;
 #pragma link C++ class THaPhotoReaction+;
 #pragma link C++ class THaSAProtonEP+;
+#pragma link C++ class THaTextvars+;
+#pragma link C++ class THaQWEAKHelicity+;
+#pragma link C++ class THaQWEAKHelicityReader+;
+#pragma link C++ class THaQWEAKHelicityReader::ROCinfo+;
 
 #ifdef ONLINE_ET
 #pragma link C++ class THaOnlRun+;
 #endif
+
 
 #endif

@@ -5,28 +5,22 @@
 //
 //   This is a pure virtual base class.  You should not
 //   instantiate this directly (and actually CAN not), but
-//   rather use THaCodaDecoder (the former THaEvData), or (more 
-//   unlikely) a sim class like THaVDCSimDecoder.
+//   rather use THaCodaDecoder or (less likely) a sim class like 
+//   THaVDCSimDecoder.
 //   
 //   This class is intended to provide a crate/slot structure
-//   for derived classes to use.  This class does NOT provide
-//   Epics, fastbus, or any fancy stuff that I don't understand
-//   (I'm just a lowly student).  Helicity is provided but defaults
-//   to NULL and zero results.  Derived classes should implement
-//   this if they can. Also, all derived class must define and 
+//   for derived classes to use.  All derived class must define and 
 //   implement LoadEvent(const int*, THaCrateMap*).  See the header.
 //
 //   
 //   original author  Robert Michaels (rom@jlab.org)
 //
 //   modified for abstraction by Ken Rossato (rossato@jlab.org)
-//   This blurb also by Ken Rossato, comments labeled KCR
 //
 //
 /////////////////////////////////////////////////////////////////////
 
 #include "THaEvData.h"
-#include "THaHelicity.h"
 #include "THaFastBusWord.h"
 #include "THaCrateMap.h"
 #include "THaUsrstrutils.h"
@@ -46,45 +40,53 @@
 
 using namespace std;
 
-static const int VERBOSE = 1;
-static const int DEBUG   = 1;
-static const int BENCH   = 0;
-
 // Instances of this object
 TBits THaEvData::fgInstances;
+
+const Double_t THaEvData::kBig = 1e38;
+
+// If false, signal attempted use of unimplemented features
+#ifndef NDEBUG
+Bool_t THaEvData::fgAllowUnimpl = false;
+#else
+Bool_t THaEvData::fgAllowUnimpl = true;
+#endif
+
+const TString THaEvData::fgDefaultCrateMapName = "cratemap";
+TString THaEvData::fgCrateMapName;
+Bool_t  THaEvData::fgNeedInit = true;
 
 //_____________________________________________________________________________
 
 THaEvData::THaEvData() :
-  helicity(0), first_load(true), first_decode(true), fgTrigSupPS(true),
-  buffer(0), run_num(0), run_type(0), run_time(0), 
-  recent_event(0),
-  dhel(0.0), dtimestamp(0.0), fNSlotUsed(0), fNSlotClear(0), fMap(0)
+  first_load(true), first_decode(true), fTrigSupPS(true),
+  buffer(0), run_num(0), run_type(0), fRunTime(0), evt_time(0),
+  recent_event(0), fNSlotUsed(0), fNSlotClear(0), fMap(0),
+  fDoBench(kFALSE), fBench(0)
 {
   fInstance = fgInstances.FirstNullBit();
   fgInstances.SetBitNumber(fInstance);
   fInstance++;
-  //  epics = new THaEpics;
+  // FIXME: not needed - here for compatibility
+  cmap = new THaCrateMap( fgDefaultCrateMapName );
+  // FIXME: dynamic allocation
   crateslot = new THaSlotData*[MAXROC*MAXSLOT];
-  cmap = new THaCrateMap;
-  //fb = new THaFastBusWord;
   fSlotUsed  = new UShort_t[MAXROC*MAXSLOT];
   fSlotClear = new UShort_t[MAXROC*MAXSLOT];
   //memset(psfact,0,MAX_PSFACT*sizeof(int));
   memset(crateslot,0,MAXROC*MAXSLOT*sizeof(THaSlotData*));
-  run_time = time(0); // default run_time is NOW
+  fRunTime = time(0); // default fRunTime is NOW
 #ifndef STANDALONE
 // Register global variables. 
   if( gHaVars ) {
     VarDef vars[] = {
       { "runnum",    "Run number",     kInt,    0, &run_num },
       { "runtype",   "CODA run type",  kInt,    0, &run_type },
-      { "runtime",   "CODA run time",  kUInt,   0, &run_time },
+      { "runtime",   "CODA run time",  kULong,  0, &fRunTime },
       { "evnum",     "Event number",   kInt,    0, &event_num },
       { "evtyp",     "Event type",     kInt,    0, &event_type },
       { "evlen",     "Event Length",   kInt,    0, &event_length },
-      { "helicity",  "Beam helicity",  kDouble, 0, &dhel },
-      { "timestamp", "Timestamp",      kDouble, 0, &dtimestamp },
+      { "evtime",    "Event time",     kULong,  0, &evt_time },
       { 0 }
     };
     TString prefix("g");
@@ -92,22 +94,15 @@ THaEvData::THaEvData() :
     if( fInstance > 1 )
       prefix.Append(Form("%d",fInstance));
     prefix.Append(".");
-#ifndef STANDALONE
     gHaVars->DefineVariables( vars, prefix, "THaEvData::THaEvData" );
-#endif
   } else
     Warning("THaEvData::THaEvData","No global variable list found. "
 	    "Variables not registered.");
-
 #endif
-  fDoBench = BENCH;
-  if( fDoBench ) {
-    fBench = new THaBenchmark;
-  } else
-    fBench = NULL;
 
-  // Enable scalers by default
-  //EnableScalers();
+  // Ensure reporting level bits are cleared
+  ResetBit(kVerbose);
+  ResetBit(kDebug);
 }
 
 
@@ -130,25 +125,13 @@ THaEvData::~THaEvData() {
   for( int i=0; i<MAXROC*MAXSLOT; i++ )
     delete crateslot[i];
   delete [] crateslot;  
-  //  delete epics;
-  delete helicity;
   delete cmap;
-  //delete fb;
   delete [] fSlotUsed;
   delete [] fSlotClear;
   fInstance--;
-  fgInstances.SetBitNumber(fInstance,kFALSE);
-}
-
-int THaEvData::GetPrescaleFactor(int trigger_type) const {
-// To get the prescale factors for trigger number "trigger_type"
-// (valid types are 1,2,3...)
-  if (VERBOSE) {
-    cout << "THaEvData: Warning:  Requested prescale factor ";
-    cout << dec << trigger_type;
-    cout << " from non-Coda class" << endl;
-  }
-  return 0;
+  fgInstances.ResetBitNumber(fInstance);
+  // FIXME: this should be per instance; or better, why is this static??
+  fgNeedInit = true;
 }
 
 const char* THaEvData::DevType(int crate, int slot) const {
@@ -157,116 +140,59 @@ const char* THaEvData::DevType(int crate, int slot) const {
     crateslot[idx(crate,slot)]->devType() : " ";
 }
 
-Double_t THaEvData::GetEvTime() const {
-  // I'm gonna let helicity related functions get away with it,
-  // because they properly check for NULL helicity -KCR
-
-  return helicity ? helicity->GetTime() : 0.0;
-}
-
-int THaEvData::GetScaler(const TString& spec, int slot, int chan) const {
-  // Can't do this, because we dont read in a crate map
-  return GetScaler(0,0,0);
-}
-
-int THaEvData::GetScaler(int roc, int slot, int chan) const {
-  // Can't do this, because we dont read in a crate map
-  if (VERBOSE) {
-    cout << "THaEvData: Warning: GetScaler called ";
-    cout << "for non-Coda class" << endl;
-  }
-  return 0;
-}
-
-int THaEvData::GetHelicity() const {
-  return helicity ? (int)helicity->GetHelicity() : 0;
-}
-
-int THaEvData::GetHelicity(const TString& spec) const {
-  return helicity ? (int)helicity->GetHelicity(spec) : 0;
-}
-
-Bool_t THaEvData::IsLoadedEpics(const char* tag) const {
-  // Oops, no Epics in base class, sorry
-
-  if (VERBOSE) {
-    cout << "THaEvData: Warning: IsLoadedEpics called ";
-    cout << "for non-Coda class" << endl;
-  }
-  return false;
-}
-
-double THaEvData::GetEpicsData(const char* tag, int event) const {
-  if (VERBOSE) {
-    cout << "THaEvData: Warning: GetEpicsData called ";
-    cout << "for non-Coda class" << endl;
-  }
-  return 0;
-}
-
-std::string THaEvData::GetEpicsString(const char* tag, int event) const {
-  if (VERBOSE) {
-    cout << "THaEvData: Warning: GetEpicsString called ";
-    cout << "for non-Coda class" << endl;
-  }
-  return 0;
-}
-
-double THaEvData::GetEpicsTime(const char* tag, int event) const {
-  if (VERBOSE) {
-    cout << "THaEvData: Warning: GetEpicsTime called ";
-    cout << "for non-Coda class" << endl;
-  }
-  return 0;
-}
-
-void THaEvData::SetRunTime( UInt_t tloc )
+void THaEvData::SetRunTime( ULong64_t tloc )
 {
   // Set run time and re-initialize crate map (and possibly other
   // database parameters for the new time.
-  if( run_time == tloc ) 
+  if( fRunTime == tloc ) 
     return;
-  run_time = tloc;
+  fRunTime = tloc;
 
   init_cmap();
-  // can't initialize what doesn't exist.  Go see THaCodaDecoder
+}
+
+void THaEvData::EnableBenchmarks( Bool_t enable )
+{
+  // Enable/disable run time reporting
+  fDoBench = enable;
+  if( fDoBench ) {
+    if( !fBench )
+      fBench = new THaBenchmark;
+  } else {
+    delete fBench;
+    fBench = 0;
+  }
 }
 
 void THaEvData::EnableHelicity( Bool_t enable ) 
 {
   // Enable/disable helicity decoding
-  if( enable )
-    SetBit(kHelicityEnabled);
-  else
-    ResetBit(kHelicityEnabled);
-}
-
-Bool_t THaEvData::HelicityEnabled() const
-{
-  // Test if helicity decoding enabled
-  return TestBit(kHelicityEnabled);
+  SetBit(kHelicityEnabled, enable);
 }
 
 void THaEvData::EnableScalers( Bool_t enable ) 
 {
   // Enable/disable scaler decoding
-  if( enable )
-    SetBit(kScalersEnabled);
-  else
-    ResetBit(kScalersEnabled);
+  SetBit(kScalersEnabled, enable);
 }
 
-Bool_t THaEvData::ScalersEnabled() const
+void THaEvData::SetVerbose( UInt_t level )
+{ 
+  // Set verbosity level
+  SetBit(kVerbose,(level!=0));
+}
+
+void THaEvData::SetDebug( UInt_t level )
 {
-  // Test if scalar decoding enabled
-  return TestBit(kScalersEnabled);
+  // Set debug level
+  SetBit(kDebug,(level!=0));
 }
 
 void THaEvData::SetOrigPS(Int_t evtyp)
 {
-  fgTrigSupPS = true;  // default after Nov 2003
+  fTrigSupPS = true;  // default after Nov 2003
   if (evtyp == PRESCALE_EVTYPE) {
-    fgTrigSupPS = false;
+    fTrigSupPS = false;
     return;
   } else if (evtyp != TS_PRESCALE_EVTYPE) {
     cout << "SetOrigPS::Warn: PS factors";
@@ -279,7 +205,7 @@ void THaEvData::SetOrigPS(Int_t evtyp)
 TString THaEvData::GetOrigPS() const
 {
   TString answer = "PS from ";
-  if (fgTrigSupPS) {
+  if (fTrigSupPS) {
     answer += " Trig Sup evtype ";
     answer.Append(Form("%d",TS_PRESCALE_EVTYPE));
   } else {
@@ -289,7 +215,6 @@ TString THaEvData::GetOrigPS() const
   return answer;
 }
 
-// KCR: wow this function looks cool.  I want one =P
 void THaEvData::hexdump(const char* cbuff, size_t nlen)
 {
   // Hexdump buffer 'cbuff' of length 'nlen'
@@ -309,11 +234,31 @@ void THaEvData::hexdump(const char* cbuff, size_t nlen)
   }
 }
 
-// To initialize the crate map member if it is to be used.
+// Static function to set fgCrateMapName
+void THaEvData::SetCrateMapName( const char* name ) {
+  if( name && *name ) {
+    if( fgCrateMapName != name ) {
+      fgCrateMapName = name;
+      fgNeedInit = true;
+    }
+  } else if( fgCrateMapName != fgDefaultCrateMapName ) {
+    fgCrateMapName = fgDefaultCrateMapName;
+    fgNeedInit = true;
+  }
+}
+
+// Set up and initialize the crate map
 int THaEvData::init_cmap()  {
-  if (DEBUG) cout << "Init crate map " << endl;
-  if( cmap->init(GetRunTime()) == THaCrateMap::CM_ERR )
-    return HED_ERR;
+  if( fgCrateMapName.IsNull() )
+    fgCrateMapName = fgDefaultCrateMapName;
+  if( !fMap || fgNeedInit || fgCrateMapName != fMap->GetName() ) {
+    delete fMap;
+    fMap = new THaCrateMap( fgCrateMapName );
+  }
+  if (TestBit(kDebug)) cout << "Init crate map " << endl;
+  if( fMap->init(GetRunTime()) == THaCrateMap::CM_ERR )
+    return HED_FATAL; // Can't continue w/o cratemap
+  fgNeedInit = false;
   return HED_OK;
 }
 
@@ -335,12 +280,12 @@ void THaEvData::makeidx(int crate, int slot)
 }
 
 void THaEvData::PrintOut() const {
-  // KCR: I need to write this function at some point
+  //TODO
   cout << "THaEvData::PrintOut() called" << endl;
 }
 
 void THaEvData::PrintSlotData(int crate, int slot) const {
-// Print the contents of (crate, slot).
+  // Print the contents of (crate, slot).
   if( GoodIndex(crate,slot)) {
     crateslot[idx(crate,slot)]->print();
   } else {
@@ -380,4 +325,5 @@ int THaEvData::init_slotdata(const THaCrateMap* map)
 }
 
 ClassImp(THaEvData)
+ClassImp(THaBenchmark)
 

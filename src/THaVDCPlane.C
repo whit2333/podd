@@ -38,7 +38,7 @@ using namespace std;
 //_____________________________________________________________________________
 THaVDCPlane::THaVDCPlane( const char* name, const char* description,
 			  THaDetectorBase* parent )
-  : THaSubDetector(name,description,parent), fTable(NULL), fTTDConv(NULL),
+  : THaSubDetector(name,description,parent), /*fTable(NULL),*/ fTTDConv(NULL),
     fVDC(NULL), fglTrg(NULL)
 {
   // Constructor
@@ -48,9 +48,7 @@ THaVDCPlane::THaVDCPlane( const char* name, const char* description,
   fClusters = new TClonesArray("THaVDCCluster", 5 );
   fWires    = new TClonesArray("THaVDCWire", 368 );
 
-  THaDetectorBase *det = GetDetector();
-  if( det )
-    fVDC = static_cast<THaSubDetector*>(det)->GetDetector();
+  fVDC = GetMainDetector();
 }
 
 //_____________________________________________________________________________
@@ -60,21 +58,17 @@ void THaVDCPlane::MakePrefix()
   // names such as "R.vdc.uv1.u.x", but rather "R.vdc.u1.x".
 
   TString basename;
-  THaDetectorBase
-    *parent = NULL,
-    *det = GetDetector();
+  THaDetectorBase* uv_plane = GetParent();
 
-  if( det && det->IsA()->InheritsFrom("THaSubDetector") )
-    parent = static_cast<THaSubDetector*>(det)->GetDetector();
-  if( parent )
-    basename = parent->GetPrefix();
+  if( fVDC )
+    basename = fVDC->GetPrefix();
   if( fName.Contains("u") )
     basename.Append("u");
   else if ( fName.Contains("v") )
     basename.Append("v");
-  if( det && strstr( det->GetName(), "uv1" ))
+  if( uv_plane && strstr( uv_plane->GetName(), "uv1" ))
     basename.Append("1.");
-  else if( det && strstr( det->GetName(), "uv2" ))
+  else if( uv_plane && strstr( uv_plane->GetName(), "uv2" ))
     basename.Append("2.");
   if( basename.Length() == 0 )
     basename = fName + ".";
@@ -100,22 +94,20 @@ Int_t THaVDCPlane::ReadDatabase( const TDatime& date )
   
   // Build the search tag and find it in the file. Search tags
   // are of form [ <prefix> ], e.g. [ R.vdc.u1 ].
-  TString tag(fPrefix); tag.Prepend("["); tag.Append("]"); 
-  tag.Replace( tag.Length()-2, 1, "" );  // delete trailing dot of prefix
-  TString line, tag2(tag);
-  tag.ToLower();
+  TString tag(fPrefix); tag.Chop(); // delete trailing dot of prefix
+  tag.Prepend("["); tag.Append("]"); 
+  TString line;
   bool found = false;
   while (!found && fgets (buff, LEN, file) != NULL) {
     char* buf = ::Compress(buff);  //strip blanks
     line = buf;
     delete [] buf;
     if( line.EndsWith("\n") ) line.Chop();  //delete trailing newline
-    line.ToLower();
     if ( tag == line ) 
       found = true;
   }
   if( !found ) {
-    Error(Here(here), "Database entry \"%s\" not found!", tag2.Data() );
+    Error(Here(here), "Database entry \"%s\" not found!", tag.Data() );
     fclose(file);
     return kInitError;
   }
@@ -125,10 +117,13 @@ Int_t THaVDCPlane::ReadDatabase( const TDatime& date )
   Int_t prev_first = 0, prev_nwires = 0;
   // Set up the detector map
   fDetMap->Clear();
-  for(int i=0; i<4; i++) {
-    Int_t crate, slot, lo, hi;
-    // Get crate, slot, low channel and high channel from file
+  do {
     fgets( buff, LEN, file );
+    // bad kludge to allow a variable number of detector map lines
+    if( strchr(buff, '.') ) // any floating point number indicates end of map
+      break;
+    // Get crate, slot, low channel and high channel from file
+    Int_t crate, slot, lo, hi;
     if( sscanf( buff, "%d%d%d%d", &crate, &slot, &lo, &hi ) != 4 ) {
       if( *buff ) buff[strlen(buff)-1] = 0; //delete trailing newline
       Error( Here(here), "Error reading detector map line: %s", buff );
@@ -141,10 +136,9 @@ Int_t THaVDCPlane::ReadDatabase( const TDatime& date )
     prev_first = first;
     prev_nwires = (hi - lo + 1);
     nWires += prev_nwires;
-  }
+  } while( *buff );  // sanity escape
   // Load z, wire beginning postion, wire spacing, and wire angle
-  fscanf (file, "%lf%lf%lf%lf", &fZ, &fWBeg, &fWSpac, &fWAngle);
-  fgets(buff, LEN, file); // Read to end of line
+  sscanf( buff, "%lf%lf%lf%lf", &fZ, &fWBeg, &fWSpac, &fWAngle );
   fWAngle *= TMath::Pi()/180.0; // Convert to radians
   // FIXME: Read from file
   fTDCRes = 5.0e-10;  // 0.5 ns/chan = 5e-10 s /chan
@@ -176,28 +170,28 @@ Int_t THaVDCPlane::ReadDatabase( const TDatime& date )
 
   // now read in the time-to-drift-distance lookup table
   // data (if it exists)
-  fgets(buff, LEN, file); // read to the end of line
-  fgets(buff, LEN, file);
-  if(strncmp(buff, "TTD Lookup Table", 16) == 0) {
-    // if it exists, read the data in
-    fscanf(file, "%le", &fT0);
-    fscanf(file, "%d", &fNumBins);
+//   fgets(buff, LEN, file); // read to the end of line
+//   fgets(buff, LEN, file);
+//   if(strncmp(buff, "TTD Lookup Table", 16) == 0) {
+//     // if it exists, read the data in
+//     fscanf(file, "%le", &fT0);
+//     fscanf(file, "%d", &fNumBins);
     
-    // this object is responsible for the memory management 
-    // of the lookup table
-    delete [] fTable;
-    fTable = new Float_t[fNumBins];
-    for(int i=0; i<fNumBins; i++) {
-      fscanf(file, "%e", &(fTable[i]));
-    }
-  } else {
-    // if not, set some reasonable defaults and rewind the file
-    fT0 = 0.0;
-    fNumBins = 0;
-    fTable = NULL;
-    cout<<"Could not find lookup table header: "<<buff<<endl;
-    fseek(file, -strlen(buff), SEEK_CUR);
-  }
+//     // this object is responsible for the memory management 
+//     // of the lookup table
+//     delete [] fTable;
+//     fTable = new Float_t[fNumBins];
+//     for(int i=0; i<fNumBins; i++) {
+//       fscanf(file, "%e", &(fTable[i]));
+//     }
+//   } else {
+//     // if not, set some reasonable defaults and rewind the file
+//     fT0 = 0.0;
+//     fNumBins = 0;
+//     fTable = NULL;
+//     cout<<"Could not find lookup table header: "<<buff<<endl;
+//     fseek(file, -strlen(buff), SEEK_CUR);
+//   }
 
   // Define time-to-drift-distance converter
   // Currently, we use the analytic converter. 
@@ -220,25 +214,24 @@ Int_t THaVDCPlane::ReadDatabase( const TDatime& date )
 
   fOrigin.SetXYZ( 0.0, 0.0, fZ );
 
-  THaDetectorBase *sdet = GetDetector();
+  THaDetectorBase *sdet = GetParent();
   if( sdet )
     fOrigin += sdet->GetOrigin();
+
+  // finally, find the timing-offset to apply on an event-by-event basis
+  //FIXME: time offset handling should go into the enclosing apparatus -
+  //since not doing so leads to exactly this kind of mess:
+  THaApparatus* app = GetApparatus();
+  const char* nm = "trg"; // inside an apparatus, the apparatus name is assumed
+  if( !app || 
+      !(fglTrg = dynamic_cast<THaTriggerTime*>(app->GetDetector(nm))) ) {
+    Warning(Here(here),"Trigger-time detector \"%s\" not found. "
+	    "Event-by-event time offsets will NOT be used!!",nm);
+  }
 
   fIsInit = true;
   fclose(file);
 
-  // finally, find the timing-offset to apply on an event-by-event basis
-  // How do I find my way to the parent apparatus?
-  while ( sdet && dynamic_cast<THaSubDetector*>(sdet) ) 
-    sdet = static_cast<THaSubDetector*>(sdet)->GetDetector();
-  // so, sdet should be a 'THADetector' now, and we can find the apparatus
-  THaApparatus* app = (sdet ? static_cast<THaDetector*>(sdet)->GetApparatus() : 0);
-  if (!app) Error(Here(here),"Subdet->Det->App chain is incorrect!");
-
-  TString nm = "trg";  // inside an apparatus, the apparatus name is assumed
-  fglTrg = dynamic_cast<THaTriggerTime*>(app->GetDetector(nm.Data()));
-  if (!fglTrg) Warning(Here(here),"Expected %s to be prepared before VDCs. Event-dependent time offsets NOT used!!",nm.Data());
-  
   return kOK;
 }
 
@@ -290,12 +283,11 @@ THaVDCPlane::~THaVDCPlane()
   delete fHits;
   delete fClusters;
   delete fTTDConv;
-  delete [] fTable;
+//   delete [] fTable;
 }
 
 //_____________________________________________________________________________
-inline
-void THaVDCPlane::Clear( Option_t* opt )
+void THaVDCPlane::Clear( Option_t* )
 {    
   // Clears the contents of the and hits and clusters
   fNWiresHit = 0;
@@ -311,8 +303,6 @@ Int_t THaVDCPlane::Decode( const THaEvData& evData)
   // TODO: Make sure the wires are numbered in order, even if the channels
   //       aren't
               
-  Clear();  //Clear the last event
-
   if (!evData.IsPhysicsTrigger()) return -1;
 
   // the event's T0-shift, due to the trigger-type
@@ -409,7 +399,7 @@ Int_t THaVDCPlane::Decode( const THaEvData& evData)
       for (int c=0; c<ncol; c++) {
 	int ind = c*nextHit/ncol+i;
 	if (ind < nextHit) {
-	  THaVDCHit* hit = static_cast<THaVDCHit*>((*fHits)[ind]);
+	  THaVDCHit* hit = static_cast<THaVDCHit*>(fHits->At(ind));
 	  printf("     %3d    %5d ",hit->GetWireNum(),hit->GetRawTime());
 	} else {
 	  //	  printf("\n");
@@ -433,18 +423,14 @@ Int_t THaVDCPlane::FindClusters()
   // correspond to decreasing physical position.
   // Ignores possibility of overlapping clusters
 
-  //FIXME: Requires ROOT 3.02. Below is a non-equivalent workaround.
-  //  bool hard_cut = fVDC->TestBits(THaVDC::kTDCbits) == kHardTDCcut;
-  //  bool soft_cut = fVDC->TestBits(kTDCbits) == kSoftTDCcut;
-  bool hard_cut, soft_cut;
+  bool hard_cut = false, soft_cut = false;
   if( fVDC ) {
     hard_cut = fVDC->TestBit(THaVDC::kHardTDCcut);
     soft_cut = fVDC->TestBit(THaVDC::kSoftTDCcut);
-  } else
-    hard_cut = soft_cut = false;
+  }
   Double_t maxdist = 0.0;
   if( soft_cut ) {
-    maxdist = static_cast<THaVDCUVPlane*>(GetDetector())->GetSpacing() / 2.0;
+    maxdist = 0.5*static_cast<THaVDCUVPlane*>(GetParent())->GetSpacing();
     if( maxdist == 0.0 )
       soft_cut = false;
   }
@@ -491,8 +477,10 @@ Int_t THaVDCPlane::FindClusters()
     ndif = wireNum - pwireNum;
     if (ndif < 0) {
       // Scream Bloody Murder
-      printf("THaVDCPlane::FindCluster()-Wire Ordering Error\n");
-      return 0;
+      Error(Here("FindCluster"),"Wire ordering error at wire numbers %d %d. "
+	    "Call expert.", pwireNum, wireNum );
+      fClusters->Remove(clust);
+      return GetNClusters();
     }
 
     pwireNum = wireNum;

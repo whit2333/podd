@@ -32,20 +32,24 @@ void THaTrack::Clear( const Option_t* opt )
   // delete memory managed by this track.
   // (We need this behavior so we can Clear("C") the track TClonesArray
   // without the overhead of clearing everything.)
+ 
+  //FIXME: too complicated. Do we really need to reallocate the trackID?
 
   if( opt && (*opt == 'F') ) {
-    fP = fDp = fTheta = fPhi = fX = fY = 0.0;
-    fRX = fRY = fRTheta = fRPhi = 0.0;
-    fTX = fTY = fTTheta = fTPhi = 0.0;
-    fDX = fDY = fDTheta = fDPhi = 0.0;
+    fTheta = fPhi = fX = fY = fP = fDp = kBig;
+    fRX = fRY = fRTheta = fRPhi = kBig;
+    fTX = fTY = fTTheta = fTPhi = kBig;
+    fDX = fDY = fDTheta = fDPhi = kBig;
     fNclusters = fFlag = fType = 0;
     if( fPIDinfo ) fPIDinfo->Clear( opt );
-    fPvect.SetXYZ( 0.0, 0.0, 0.0 );
-    fVertex.SetXYZ( 0.0, 0.0, 0.0 );
-    fVertexError.SetXYZ( 1.0, 1.0, 1.0 );
-    fChi2 = kBig; fNDoF = 0.0;
+    fPvect.SetXYZ( kBig, kBig, kBig );
+    fVertex.SetXYZ( kBig, kBig, kBig );
+    fVertexError.SetXYZ( kBig, kBig, kBig );
+    fPathl = fTime = fdTime = fBeta = fdBeta = kBig;
+    fChi2 = kBig; fNDoF = 0;
+    memset( fClusters, 0, kMAXCL*sizeof(THaCluster*) );
   }
-  delete fID; fID = NULL;
+  delete fID; fID = 0;
 }
 
 //_____________________________________________________________________________
@@ -69,13 +73,39 @@ void THaTrack::Print( Option_t* opt ) const
   cout << "Momentum = " << fP << " GeV/c\n";
   cout << "x_fp     = " << fX   << " m\n";
   cout << "y_fp     = " << fY   << " m\n";
-  cout << "Theta    = " << fTheta << " rad\n";
-  cout << "Phi      = " << fPhi << " rad\n";
+  cout << "theta_fp = " << fTheta << " rad\n";
+  cout << "phi_fp   = " << fPhi << " rad\n";
 
   for( int i=0; i<fNclusters; i++ )
     fClusters[i]->Print();
   if( fPIDinfo ) fPIDinfo->Print( opt );
 }
+
+//_____________________________________________________________________________
+static Double_t SafeNDoF( Int_t dof )
+{
+  if( dof <= 0 )
+    return 1e-10;
+  return static_cast<Double_t>(dof);
+}
+
+//_____________________________________________________________________________
+Int_t THaTrack::Compare(const TObject * obj) const
+{
+  // compare two tracks by chi2/ndof
+  // for track array sorting
+
+  const THaTrack* tr = dynamic_cast<const THaTrack*>(obj);
+  if (!tr) return 0;
+
+  Double_t v1 = GetChi2() / SafeNDoF( GetNDoF() );
+  Double_t v2 = tr->GetChi2()/ SafeNDoF( tr->GetNDoF() );
+
+  if( v1<v2 ) return -1;
+  else if( v1==v2 ) return 0;
+  else return 1;
+}
+
 
 //_____________________________________________________________________________
 

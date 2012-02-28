@@ -7,8 +7,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include "TObject.h"
-#include "THaString.h"
+#include "Rtypes.h"
 #include <vector>
 #include <map>
 #include <string> 
@@ -27,12 +26,13 @@ class THaOdata {
 // Utility class used by THaOutput to store arrays 
 // up to size 'nsize' for tree output.
 public:
-  THaOdata(int n=1) : tree(NULL), ndata(0), nsize(n) { data = new Double_t[n]; }
+  THaOdata(int n=1) : tree(NULL), ndata(0), nsize(n)
+  { data = new Double_t[n]; }
   THaOdata(const THaOdata& other);
   THaOdata& operator=(const THaOdata& rhs);
   virtual ~THaOdata() { delete [] data; };
   void AddBranches(TTree* T, std::string name);
-  void Clear( Option_t* opt="" ) { ndata = 0; }  
+  void Clear( Option_t* ="" ) { ndata = 0; }  
   Bool_t Resize(Int_t i);
   Int_t Fill(Int_t i, Double_t dat) {
     if( i<0 || (i>=nsize && Resize(i)) ) return 0;
@@ -67,7 +67,6 @@ private:
 class THaEpicsKey;
 class THaScalerKey;
 
-
 class THaOutput {
   
 public:
@@ -89,27 +88,25 @@ protected:
 
   virtual Int_t LoadFile( const char* filename );
   virtual Int_t Attach();
-  virtual Int_t FindKey(const THaString& key) const;
-  virtual void  ErrFile(Int_t iden, const THaString& sline) const;
-  virtual Int_t ChkHistTitle(Int_t key, const THaString& sline);
-  virtual Int_t BuildBlock(const THaString& blockn);
-  virtual THaString StripBracket(THaString& var) const; 
-  std::vector<THaString> reQuote(std::vector<THaString> input) const;
-  THaString CleanEpicsName(THaString var) const;
-  void BuildList(const std::vector<THaString>& vdata);
-  void AddScaler(const THaString& name, const THaString& bank, 
+  virtual Int_t FindKey(const std::string& key) const;
+  virtual void  ErrFile(Int_t iden, const std::string& sline) const;
+  virtual Int_t ChkHistTitle(Int_t key, const std::string& sline);
+  virtual Int_t BuildBlock(const std::string& blockn);
+  virtual std::string StripBracket(const std::string& var) const; 
+  std::vector<std::string> reQuote(const std::vector<std::string> input) const;
+  std::string CleanEpicsName(const std::string& var) const;
+  void BuildList(const std::vector<std::string>& vdata);
+  void AddScaler(const std::string& name, const std::string& bank, 
          Int_t helicity = 0, Int_t slot=-1, Int_t chan=-1); 
   void DefScaler(Int_t hel = 0);
   void Print() const;
-
-// Variables, Formulas, Cuts, Histograms
-
+  // Variables, Formulas, Cuts, Histograms
   Int_t fNvar;
   Double_t *fVar, *fEpicsVar;
-  std::vector<THaString> fVarnames, 
-                         fFormnames, fFormdef,
-                         fCutnames, fCutdef,
-                         fArrayNames, fVNames; 
+  std::vector<std::string> fVarnames, 
+                           fFormnames, fFormdef,
+                           fCutnames, fCutdef,
+                           fArrayNames, fVNames; 
   std::vector<THaVar* >  fVariables, fArrays;
   std::vector<THaVform* > fFormulas, fCuts;
   std::vector<THaVhist* > fHistos;
@@ -119,34 +116,26 @@ protected:
   TTree *fTree, *fEpicsTree; 
   std::map<std::string, TTree*> fScalTree;
   bool fInit;
-
+  
   enum EId {kVar = 1, kForm, kCut, kH1f, kH1d, kH2f, kH2d, kBlock,
             kBegin, kEnd, kRate, kCount };
   static const Int_t kNbout = 4000;
   static const Int_t fgNocut = -1;
 
+  static Int_t fgVerbose;
+
 private:
 
-  THaOutput(const THaOutput& output) {}
-  THaOutput& operator=(const THaOutput& output) { return *this; }
+  THaOutput(const THaOutput&);
+  THaOutput& operator=(const THaOutput& );
 
-  THaString stitle, sfvarx, sfvary, scut, fScalBank;
+  std::string stitle, sfvarx, sfvary, scut, fScalBank;
 
   Int_t nx,ny,iscut, fScalRC;
   Float_t xlo,xhi,ylo,yhi;
   Bool_t fOpenEpics,fOpenScal,fFirstEpics,fFirstScal;
 
-  static Int_t fgVerbose;
-
   ClassDef(THaOutput,0)  
 };
 
 #endif
-
-
-
-
-
-
-
-

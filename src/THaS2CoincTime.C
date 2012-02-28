@@ -5,7 +5,9 @@
 // THaS2CoincTime
 //
 // Calculate coincidence time between tracks in two spectrometers.
-//  Uses only the time of the tracks in given detectors (def. is S2)
+//  Differs from THaCoincTime in that here the specific detectors to use
+//  to get the time tracks in the spectrometers can be named.
+//  The default is "s2".
 //
 //  Loop through all combinations of tracks in the two spectrometers.
 //  Here we assume that the time difference+fixed delay between the
@@ -13,9 +15,7 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
 #include <cstring>
-#include <string>
 
 #include "TLorentzVector.h"
 #include "TVector3.h"
@@ -33,8 +33,6 @@
 #include "THaVarList.h"
 #include "THaGlobals.h"
 #include "VarDef.h"
-#include "THaString.h"
-#include "THaDB.h"
 
 using namespace std;
 
@@ -46,11 +44,40 @@ THaS2CoincTime::THaS2CoincTime( const char* name,
 				const char* spec1, const char* spec2,
 				Double_t m1, Double_t m2,
 				const char* ch_name1, const char* ch_name2,
-				const char* detname)
+				const char* detname1, const char* detname2)
   : THaCoincTime(name,description,spec1,spec2,m1,m2,ch_name1,ch_name2),
-    fDetName(detname)
+    fDetName1(detname1)
 {
-  // nothing special
+  // To construct, specify the name of the module (usually "CT"),
+  // a description ("Coincidence time calculation between L and R HRS"),
+  // the FIRST and SECOND source of tracks ("L" and "R"),
+  // the MASSES in GeV/c^2  of the particles in FIRST and SECOND spectrometers.
+  //
+  // The rest of the parameters are usually not used.
+  //
+  // The next two are thes name of the TDC channels in the database for this
+  // object measuring the difference between the COMMON STARTS of the FIRST
+  // and SECOND spectrometers, such that:
+  //
+  //  * ch_name1 measures  COMMON_START<sub>2</sub> - COMMON_START<sub>1</sub>,
+  //  * ch_name2 measures  COMMON_START<sub>1</sub> - COMMON_START<sub>2</sub>.
+  //
+  //  These default to "ct_(spec2 name)by(spec1 name)" and
+  //  "ct_(spec1 name)by(spec2 name)", respectively.
+  //
+  //  * detname1 is the name of the timing plane in the FIRST spectrometer to
+  //        use to measure the time of the track in this spectrometer.
+  //  * detname2 is likewise the name of the timing plane in the SECOND
+  //        spectrometer. If not specified, detname1 is used.
+  //      
+  //  The default arguments are detname1="s2", and detname2 be assigned to
+  //  match detname1.
+
+  if (detname2 && strlen(detname2)>0) {
+    fDetName2=detname2;
+  } else {
+    fDetName2=fDetName1;
+  }
 }
 
 //_____________________________________________________________________________
@@ -62,31 +89,41 @@ THaS2CoincTime::~THaS2CoincTime()
 //_____________________________________________________________________________
 THaAnalysisObject::EStatus THaS2CoincTime::Init( const TDatime& run_time )
 {
-  // Initialize the module
-  //    first do the standard initialization
+  // Initialize the module. Grab the global variables containing the tracking
+  // results (including calculated pathlengths) and the times and pads from the
+  // THaScintillator planes.
+
+  // first do the standard initialization
   THaAnalysisObject::EStatus stat = THaCoincTime::Init(run_time);
 
   if (stat != kOK) return stat;
 
   if (!fSpect1 || !fSpect2) return kInitError;
-  string detn(fDetName,fDetName.Length());
   
-  fTrPads1   = gHaVars->Find(Form("%s.%s.trpad",fSpect1->GetName(),detn.c_str()));
-  fS2TrPath1 = gHaVars->Find(Form("%s.%s.trpath",fSpect1->GetName(),detn.c_str()));
-  fS2Times1  = gHaVars->Find(Form("%s.%s.time",fSpect1->GetName(),detn.c_str()));
-  fTrPath1   = gHaVars->Find(Form("%s.tr.pathl",fSpect1->GetName()));
+  fTrPads1  = gHaVars->Find(Form("%s.%s.trpad",fSpect1->GetName(),
+				 fDetName1.Data()));
+  fS2TrPath1= gHaVars->Find(Form("%s.%s.trpath",fSpect1->GetName(),
+				 fDetName1.Data()));
+  fS2Times1 = gHaVars->Find(Form("%s.%s.time",fSpect1->GetName(),
+				 fDetName1.Data()));
+  fTrPath1  = gHaVars->Find(Form("%s.tr.pathl",fSpect1->GetName()));
   if (!fTrPads1 || !fS2TrPath1 || !fS2Times1 || !fTrPath1) {
-    Error("THaS2CoicTime::Init","Cannot get variables for spectrometer %s detector %s", fSpect1->GetName(),detn.c_str());
+    Error(Here("Init"),"Cannot get variables for spectrometer %s detector %s",
+	  fSpect1->GetName(),fDetName1.Data());
     return kInitError;
   }
 
-  fTrPads2   = gHaVars->Find(Form("%s.%s.trpad",fSpect2->GetName(),detn.c_str()));
-  fS2TrPath2 = gHaVars->Find(Form("%s.%s.trpath",fSpect2->GetName(),detn.c_str()));
-  fS2Times2  = gHaVars->Find(Form("%s.%s.time",fSpect2->GetName(),detn.c_str()));
-  fTrPath2   = gHaVars->Find(Form("%s.tr.pathl",fSpect2->GetName()));
+  fTrPads2  = gHaVars->Find(Form("%s.%s.trpad",fSpect2->GetName(),
+				 fDetName2.Data()));
+  fS2TrPath2= gHaVars->Find(Form("%s.%s.trpath",fSpect2->GetName(),
+				 fDetName2.Data()));
+  fS2Times2 = gHaVars->Find(Form("%s.%s.time",fSpect2->GetName(),
+				 fDetName2.Data()));
+  fTrPath2  = gHaVars->Find(Form("%s.tr.pathl",fSpect2->GetName()));
   
   if (!fTrPads2 || !fS2TrPath2 || !fS2Times2 || !fTrPath2) {
-    Error("THaS2CoicTime::Init","Cannot get variables for spectrometer %s detector %s", fSpect2->GetName(),detn.c_str());
+    Error(Here("Init"),"Cannot get variables for spectrometer %s detector %s",
+	  fSpect2->GetName(),fDetName2.Data());
     return kInitError;
   }
 
@@ -96,7 +133,10 @@ THaAnalysisObject::EStatus THaS2CoincTime::Init( const TDatime& run_time )
 //_____________________________________________________________________________
 Int_t THaS2CoincTime::Process( const THaEvData& evdata )
 {
-  // Read in coincidence TDC's
+  // Read in coincidence TDC's, calculate the time of the tracks at the
+  // target vertex, and then assemble the time-difference between when the
+  // tracks left the target for every possible combination.
+
   if( !IsOK() ) return -1;
 
   if (!fDetMap) return -1;

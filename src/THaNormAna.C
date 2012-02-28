@@ -72,7 +72,7 @@
 #include <iostream>
 
 using namespace std;
-
+using THaString::CmpNoCase;
 
 //_____________________________________________________________________________
 THaNormAna::THaNormAna( const char* name, const char* descript ) :
@@ -128,7 +128,7 @@ THaNormAna::~THaNormAna()
 }
 
 //_____________________________________________________________________________
-Int_t THaNormAna::SetupRawData( const TDatime* run_time, EMode mode )
+Int_t THaNormAna::SetupRawData( const TDatime* /* run_time */, EMode mode )
 {
   Int_t retval = 0;
 
@@ -166,19 +166,28 @@ Int_t THaNormAna::SetupRawData( const TDatime* run_time, EMode mode )
 //_____________________________________________________________________________
 void THaNormAna::InitRocScalers()
 { // setup the ROC scalers we want to decode.
-
-  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-1",0xabc30000, 0xabc50000, 0, &roc11_t1));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-2",0xabc30000, 0xabc50000, 1, &roc11_t2));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-3",0xabc30000, 0xabc50000, 2, &roc11_t3));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-4",0xabc30000, 0xabc50000, 3, &roc11_t4));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-5",0xabc30000, 0xabc50000, 4, &roc11_t5));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"clock1024",0xabc30000, 0xabc50000, 7, &roc11_clk1024));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"bcm_u3",0xabc30000, 0xabc50000, 6, &roc11_bcmu3));
-  fRocScaler.push_back(new BRocScaler(11,(char*)"bcm_u10",0xabc30000, 0xabc50000, 11, &roc11_bcmu10));
+  
+  //TODO: remove (char*) casts
+  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-1",0xabc30000,
+				      0xabc50000, 0, &roc11_t1));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-2",0xabc30000,
+				      0xabc50000, 1, &roc11_t2));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-3",0xabc30000,
+				      0xabc50000, 2, &roc11_t3));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-4",0xabc30000,
+				      0xabc50000, 3, &roc11_t4));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"trigger-5",0xabc30000,
+				      0xabc50000, 4, &roc11_t5));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"clock1024",0xabc30000,
+				      0xabc50000, 7, &roc11_clk1024));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"bcm_u3",0xabc30000,
+				      0xabc50000, 6, &roc11_bcmu3));
+  fRocScaler.push_back(new BRocScaler(11,(char*)"bcm_u10",0xabc30000,
+				      0xabc50000, 11, &roc11_bcmu10));
 }
 
 //_____________________________________________________________________________
-Int_t THaNormAna::End( THaRunBase* run ) 
+Int_t THaNormAna::End( THaRunBase* ) 
 {
 
   PrintSummary();
@@ -311,8 +320,8 @@ THaAnalysisObject::EStatus THaNormAna::Init( const TDatime& run_time )
   TIter next(scalerList);
   while( THaScalerGroup* tscalgrp = static_cast<THaScalerGroup*>( next() )) {
     THaScaler *scaler = tscalgrp->GetScalerObj();
-    THaString mybank("Left");
-    if (mybank.CmpNoCase(scaler->GetName()) == 0) {
+    string mybank("Left");
+    if (CmpNoCase(mybank,scaler->GetName()) == 0) {
          myscaler = scaler;   // event type 140 data
          break;
     }
@@ -377,8 +386,11 @@ Int_t THaNormAna::Process(const THaEvData& evdata)
 // helicity is -1,0,1.  here, 0 == irrespective of helicity.
 // But if helicity disabled its always 0.
 
-  fHelEnable = evdata.HelicityEnabled();
-  Int_t helicity = evdata.GetHelicity();
+//FIXME: temporary workaround for helicity work-in-progress
+//  fHelEnable = evdata.HelicityEnabled();
+//  Int_t helicity = evdata.GetHelicity();
+  fHelEnable = kFALSE;
+  Int_t helicity = 0;
 
   if (evdata.IsPhysicsTrigger()) normdata->EvCount(helicity);
 
@@ -447,13 +459,13 @@ Int_t THaNormAna::Process(const THaEvData& evdata)
 
 
 //_____________________________________________________________________________
-void THaNormAna::Print( Option_t* opt ) const {
-// Print for purpose of debugging.
+void THaNormAna::Print( Option_t* ) const
+{
+  // Print for purpose of debugging.
 
    normdata->Print();
 
    PrintSummary();
-
 }
 
 

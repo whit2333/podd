@@ -10,10 +10,10 @@
 #pragma link C++ class THaEpics+;
 #pragma link C++ class THaEvData+;
 #pragma link C++ class THaFastBusWord+;
-#pragma link C++ class THaHelicity+;
 #pragma link C++ class THaSlotData+;
 #pragma link C++ class THaUsrstrutils+;
 #pragma link C++ class THaCodaDecoder+;
+#pragma link C++ class THaBenchmark+;
 #pragma link C++ class THaEvData::RocDat_t+;
 
 #ifdef ONLINE_ET

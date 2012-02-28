@@ -30,6 +30,7 @@ THaRunParameters::THaRunParameters() :
 
 //_____________________________________________________________________________
 THaRunParameters::THaRunParameters( const THaRunParameters& rhs ) :
+  TObject(rhs),
   fBeamName(rhs.fBeamName), fBeamE(rhs.fBeamE), fBeamP(rhs.fBeamP),
   fBeamM(rhs.fBeamM), fBeamQ(rhs.fBeamQ), fBeamdE(rhs.fBeamdE), 
   fBeamPol(rhs.fBeamPol),
@@ -72,7 +73,7 @@ THaRunParameters::~THaRunParameters()
 }
 
 //_____________________________________________________________________________
-void THaRunParameters::Clear( Option_t* opt )
+void THaRunParameters::Clear( Option_t* )
 {
   // Clear run parameters
   fBeamName = fTgtName = fRunName = "";
@@ -83,7 +84,7 @@ void THaRunParameters::Clear( Option_t* opt )
 }
 
 //_____________________________________________________________________________
-void THaRunParameters::Print( Option_t* opt ) const
+void THaRunParameters::Print( Option_t* ) const
 {
   // Print run parameters
 
@@ -129,14 +130,14 @@ Int_t THaRunParameters::ReadDatabase( const TDatime& date )
 #define OPEN THaAnalysisObject::OpenFile
 #define READ THaAnalysisObject::LoadDBvalue
 
-  FILE* f = OPEN( "run", date, "THaRunParameters::ReadDatabase", "r", 0 );
+  FILE* f = OPEN( "run", date, "THaRunParameters::ReadDatabase", "r", 1 );
   if( !f ) 
     return -1;
 
   Int_t iq, st;
   Double_t E, M = 0.511e-3, Q = -1.0, dE = 0.0;
 
-  if( (st = READ( f, date, "Ebeam", E )) ) {
+  if( (st = READ( f, date, "ebeam", E )) ) {
     // Beam energy required
     Error( "ReadDatabase", "Beam energy missing in run database. "
 	   "Run parameter initialization failed." );

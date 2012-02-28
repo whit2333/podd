@@ -10,6 +10,7 @@
 #include "TObject.h"
 #include "TVector3.h"
 #include "THaPIDinfo.h"
+#include <cstring>   // for memset
 
 class TClonesArray;
 class THaTrackingDetector;
@@ -29,22 +30,45 @@ public:
     kHasVertex     = BIT(4)   // Vertex reconstructed
   };
 
-  typedef THaTrackingDetector TD;
+  // Default constructor
+  THaTrack() 
+    : TObject(),
+      fX(kBig), fY(kBig), fTheta(kBig), fPhi(kBig), fP(kBig),
+      fNclusters(0), fPIDinfo(0), fCreator(0), 
+      fDX(kBig), fDY(kBig), fDTheta(kBig), fDPhi(kBig),
+      fRX(kBig), fRY(kBig), fRTheta(kBig), fRPhi(kBig),
+      fTX(kBig), fTY(kBig), fTTheta(kBig), fTPhi(kBig), fDp(kBig),
+      fPvect(kBig,kBig,kBig), fVertex(kBig,kBig,kBig),
+      fVertexError(kBig,kBig,kBig),
+      fPathl(kBig), fTime(kBig), fdTime(kBig), fBeta(kBig), fdBeta(kBig),
+      fID(0), fFlag(0), fType(0), fChi2(kBig), fNDoF(0)
+  { memset(fClusters,0,kMAXCL*sizeof(THaCluster*)); }
 
-  THaTrack() : 
-    fX(0.0), fY(0.0), fTheta(0.0), fPhi(0.0), fP(0.0), fNclusters(0),
-    fPIDinfo(NULL), fCreator(NULL), fVertexError(1.0,1.0,1.0),
-    fID(NULL), fFlag(0), fType(0), fChi2(kBig), fNDoF(0.0) {}
+  // Constructor with fp coordinates
+  // FIXME: this really should be setting detector coordinates
   THaTrack( Double_t x, Double_t y, Double_t theta, Double_t phi,
-	    TD* creator=NULL, THaTrackID* id=NULL, THaPIDinfo* pid=NULL ) :
-    fX(x), fY(y), fTheta(theta), fPhi(phi), fP(0.0), fNclusters(0),
-    fPIDinfo(pid), fCreator(creator), fVertexError(1.0,1.0,1.0),
-    fID(id), fFlag(0), fType(0), fChi2(kBig), fNDoF(0.0) { if(pid) pid->Clear(); }
+	    THaTrackingDetector* creator=0, THaTrackID* id=0,
+	    THaPIDinfo* pid=0 )
+    : TObject(),
+      fX(x), fY(y), fTheta(theta), fPhi(phi), fP(kBig),
+      fNclusters(0), fPIDinfo(pid), fCreator(creator), 
+      fDX(kBig), fDY(kBig), fDTheta(kBig), fDPhi(kBig),
+      fRX(kBig), fRY(kBig), fRTheta(kBig), fRPhi(kBig),
+      fTX(kBig), fTY(kBig), fTTheta(kBig), fTPhi(kBig), fDp(kBig),
+      fPvect(kBig,kBig,kBig), fVertex(kBig,kBig,kBig),
+      fVertexError(kBig,kBig,kBig),
+      fPathl(kBig), fTime(kBig), fdTime(kBig), fBeta(kBig), fdBeta(kBig),
+      fID(id), fFlag(0), fType(kHasFP), fChi2(kBig), fNDoF(0)
+  { 
+    memset(fClusters,0,kMAXCL*sizeof(THaCluster*)); 
+    if(pid) pid->Clear(); 
+  }
+
   virtual ~THaTrack();
 
   Int_t             AddCluster( THaCluster* c );
   void              Clear( Option_t* opt="" );
-  TD*               GetCreator()       const { return fCreator; }
+  THaTrackingDetector* GetCreator()    const { return fCreator; }
   Int_t             GetNclusters()     const { return fNclusters; }
   THaCluster*       GetCluster( Int_t i )    { return fClusters[i]; }
   UInt_t            GetFlag()          const { return fFlag; }
@@ -60,7 +84,7 @@ public:
   Double_t          GetY( Double_t z ) const { return fY + z*fPhi; }
 
   Double_t          GetChi2()          const { return fChi2; }
-  Double_t          GetNDoF()          const { return fNDoF; }
+  Int_t             GetNDoF()          const { return fNDoF; }
   
   Double_t          GetDX()            const { return fDX; }
   Double_t          GetDY()            const { return fDY; }
@@ -116,16 +140,16 @@ public:
 			       Double_t theta, Double_t phi );
 
   void              SetPathLen( Double_t pathl ) { fPathl = pathl; /* meters */ }
-  void              SetTime( Double_t time ) { fTime = time; /* seconds */ } 
-  void              SetdTime( Double_t dt ) { fdTime = dt; /* seconds */ }
-  void              SetBeta( Double_t beta ) { fBeta = beta; }
-  void              SetdBeta( Double_t db ) { fdBeta = db; }
+  void              SetTime( Double_t time )     { fTime = time; /* seconds */ } 
+  void              SetdTime( Double_t dt )      { fdTime = dt; /* seconds */ }
+  void              SetBeta( Double_t beta )     { fBeta = beta; }
+  void              SetdBeta( Double_t db )      { fdBeta = db; }
 
-  void              SetChi2( Double_t chi2, Double_t ndof ) { fChi2=chi2; fNDoF=ndof; }
+  void              SetChi2( Double_t chi2, Int_t ndof ) { fChi2=chi2; fNDoF=ndof; }
 
-  void              SetCreator( TD* d )                { fCreator = d; }
-  void              SetPIDinfo( THaPIDinfo* pid )      { fPIDinfo = pid; }
-  void              SetPvect( const TVector3& pvect )  { fPvect   = pvect; }
+  void              SetCreator( THaTrackingDetector* d ) { fCreator = d; }
+  void              SetPIDinfo( THaPIDinfo* pid )        { fPIDinfo = pid; }
+  void              SetPvect( const TVector3& pvect )    { fPvect   = pvect; }
   void              SetVertex( const TVector3& vert )     
   { fVertex = vert; fType |= kHasVertex; }
   void              SetVertex( Double_t x, Double_t y, Double_t z )
@@ -134,6 +158,9 @@ public:
   { fVertexError = err; }
   void              SetVertexError( Double_t x, Double_t y, Double_t z )
   { fVertexError.SetXYZ( x, y, z ); }
+
+  virtual Bool_t    IsSortable() const { return kTRUE; }
+  virtual Int_t	    Compare(const TObject* obj) const;
 
 protected:
 
@@ -149,7 +176,7 @@ protected:
   Int_t             fNclusters;      //! Number of clusters
   THaCluster*       fClusters[kMAXCL]; //! Clusters of this track
   THaPIDinfo*       fPIDinfo;        //! Particle ID information for this track
-  TD*               fCreator;        //! Detector creating this track
+  THaTrackingDetector* fCreator;     //! Detector creating this track
 
   // coordinates in the detector system
   Double_t fDX;     // x position in DCS
@@ -185,12 +212,12 @@ protected:
   UInt_t            fFlag;   // General status flag (for use by tracking det.)
   UInt_t            fType;   // Flag indicating which vectors reconstructed
 
-  Double_t          fChi2;   // good-ness of track
-  Double_t          fNDoF;   // number of hits on the track contributing to chi2
+  Double_t          fChi2;   // goodness of track fit
+  Int_t             fNDoF;   // number of hits on the track contributing to chi2
 
   static const Double_t kBig;
   
-  ClassDef(THaTrack,3)       // A generic particle track
+  ClassDef(THaTrack,4)       // A generic particle track
 };
 
 //__________________ inlines __________________________________________________
