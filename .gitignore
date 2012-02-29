@@ -1,0 +1,17 @@
+# Auto generated files
+NormAnaDict.C
+NormAnaDict.h
+analyzer
+haDict.C
+haDict.h
+hana_decode/THaDecDict.C
+hana_decode/THaDecDict.h
+hana_scaler/THaScalDict.C
+hana_scaler/THaScalDict.h
+src/ha_compiledata.h
+DB/scaler.map
+# Patterns
+*.[oad]
+*~
+*.so
+*.so.*
