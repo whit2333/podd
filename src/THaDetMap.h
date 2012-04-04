@@ -39,6 +39,8 @@ public:
     UShort_t hi;
     UInt_t   first;  // logical number of first channel
     UInt_t   model;  // model number of module (for ADC/TDC identification).
+    UInt_t   plane;  // Detector plane
+    UInt_t   signal; // (eg. PosADC, NegADC, PosTDC, NegTDC)
     Int_t    refchan;    // for pipeline TDCs: reference channel number
     Int_t    refindex;   // for pipeline TDCs: index into reference channel map
     Double_t resolution; // Resolution (s/chan) for TDCs
