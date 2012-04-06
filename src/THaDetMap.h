@@ -71,7 +71,9 @@ public:
     kFillLogicalChannel  = BIT(10),   // Parse the logical channel number
     kFillModel           = BIT(11),   // Parse the model number
     kFillRefIndex        = BIT(12),   // Parse the reference index
-    kFillRefChan         = BIT(13)    // Parse the reference channel
+    kFillRefChan         = BIT(13),   // Parse the reference channel
+    kFillPlane           = BIT(14),   // Parse the detector plane (for Hall C)
+    kFillSignal          = BIT(15)    // Parse the signal type (for Hall C)
   };
 
   THaDetMap();
@@ -82,7 +84,8 @@ public:
   virtual Int_t     AddModule( UShort_t crate, UShort_t slot, 
 			       UShort_t chan_lo, UShort_t chan_hi,
 			       UInt_t first=0, UInt_t model=0,
-			       Int_t refindex=-1, Int_t refchan = -1 );
+			       Int_t refindex=-1, Int_t refchan = -1,
+			       UInt_t plane=0, UInt_t signal=0);
           void      Clear()  { fNmodules = 0; }
   virtual Module*   Find( UShort_t crate, UShort_t slot, UShort_t chan );
   virtual Int_t     Fill( const std::vector<Int_t>& values, UInt_t flags = 0 );
