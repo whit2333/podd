@@ -15,3 +15,4 @@ DB/scaler.map
 *~
 *.so
 *.so.*
+\#.*\#
