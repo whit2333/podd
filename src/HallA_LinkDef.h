@@ -120,6 +120,8 @@
 #pragma link C++ class THaQWEAKHelicityReader+;
 #pragma link C++ class THaQWEAKHelicityReader::ROCinfo+;
 
+#pragma link C++ class THaRawHit+;
+
 #ifdef ONLINE_ET
 #pragma link C++ class THaOnlRun+;
 #endif
