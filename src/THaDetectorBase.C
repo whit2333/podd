@@ -28,8 +28,6 @@ THaDetectorBase::THaDetectorBase( const char* name,
 
   fSize[0] = fSize[1] = fSize[2] = 0.0;
   fDetMap = new THaDetMap;
-
-  fRawHitList = NULL;
 }
 
 //_____________________________________________________________________________
@@ -42,59 +40,6 @@ THaDetectorBase::~THaDetectorBase()
 {
   // Destructor
   delete fDetMap;
-}
-
-Int_t THaDetectorBase::DecodeToHitList( const THaEvData& evdata ) {
-  THaRawHit* rawhit;
-  fRawHitList->Clear("C");
-  fNRawHits = 0;
-
-  for ( Int_t i=0; i < fDetMap->GetSize(); i++ ) {
-    THaDetMap::Module* d = fDetMap->GetModule(i);
-
-    // Loop over all channels that have a hit.
-    for ( Int_t j=0; j < evdata.GetNumChan( d->crate, d->slot); j++) {
-      
-      Int_t chan = evdata.GetNextChan( d->crate, d->slot, j );
-      if( chan < d->lo || chan > d->hi ) continue;     // Not one of my channels
-      
-      // Need to convert crate, slot, chan into plane, counter, signal
-      // Search hitlist for this plane,counter,signal
-      Int_t plane = d->plane;
-      Int_t signal = d->signal;
-      Int_t counter = d->reverse ? d->first + d->hi - chan : d->first + chan - d->lo
-;
-	
-      // Search hit list for plane and counter
-      // We could do sorting 
-      Int_t thishit = 0;
-      while(thishit < fNRawHits) {
-	rawhit = (THaRawHit*) (*fRawHitList)[thishit];
-	if (plane == rawhit->fPlane
-	    && counter == rawhit->fCounter) {
-	  break;
-	}
-	thishit++;
-      }
-      if(thishit == fNRawHits) {
-	fNRawHits++;
-	rawhit = (THaRawHit*) (*fRawHitList)[thishit];
-	rawhit->fPlane = plane;
-	rawhit->fCounter = counter;
-      }
-	
-      // Get the data from this channel
-      // Allow for multiple hits
-      Int_t nMHits = evdata.GetNumHits(d->crate, d->slot, chan);
-      for (Int_t mhit = 0; mhit < nMHits; mhit++) {
-	Int_t data = evdata.GetData( d->crate, d->slot, chan, mhit);
-	rawhit->SetData(signal,data);
-      }
-    }
-  }
-  fRawHitList->Sort(fNRawHits);
-
-  return fNRawHits;		// Does anything care what is returned
 }
 
 //_____________________________________________________________________________
@@ -115,18 +60,6 @@ Int_t THaDetectorBase::FillDetMap( const vector<Int_t>& values, UInt_t flags,
 	   "(wrong number of values). Check database." );
   }
   return ret;
-}
-
-//_____________________________________________________________________________
-void THaDetectorBase::InitHitlist(const char *hitclass, Int_t maxhits) {
-  // Probably called by ReadDatabase
-  fRawHitList = new TClonesArray(hitclass, maxhits);
-  fRawHitClass = fRawHitList->GetClass();
-  fNMaxRawHits = maxhits;
-  fNRawHits = 0;
-  for(Int_t i=0;i<maxhits;i++) {
-    fRawHitList->New(i);
-  }
 }
 
 //_____________________________________________________________________________

@@ -8,10 +8,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "THaAnalysisObject.h"
-#include "THaRawHit.h"
-#include "THaEvData.h"
 #include "TVector3.h"
-#include "TClonesArray.h"
 #include <vector>
 
 class THaDetMap;
@@ -37,14 +34,6 @@ public:
 			       UInt_t flags=0,
 			       const char* here = "FillDetMap" );
   void             PrintDetMap( Option_t* opt="") const;
-
-  // Hit list variables
-  virtual Int_t DecodeToHitList( const THaEvData& );
-  void          InitHitlist(const char *hitclass, Int_t maxhits);
-  Int_t         fNRawHits;
-  Int_t         fNMaxRawHits;
-  TClonesArray* fRawHitList; // List of raw hits
-  TClass* fRawHitClass;		  // Class of raw hit object to use
 
 protected:
 
