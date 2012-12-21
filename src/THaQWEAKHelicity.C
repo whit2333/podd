@@ -195,8 +195,7 @@ void THaQWEAKHelicity::SetErrorCode(Int_t error)
   // 2^5: if seed is being gathered
 
   if(fErrorCode==0)
-    fErrorCode=2<<error;
-    //    fErrorCode=pow(2,error);
+    fErrorCode=(1<<error);
   // only one reported error at the time
 
   return;
